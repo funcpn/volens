@@ -1,0 +1,4 @@
+# Shell hooks ship LF everywhere: a CRLF checkout breaks bash on Windows
+# (Git for Windows defaults core.autocrlf=true, which would make the
+# sync hook a syntax error for anyone who clones this repo there).
+*.sh text eol=lf
