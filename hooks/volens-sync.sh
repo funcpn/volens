@@ -48,26 +48,29 @@ emit() {
   # $1: "sync" -> delta inject, "reset" -> full rebuild
   local CONTEXT="The decision log docs/DECISION-LOG.md is at line ${M}, but docs/DESIGN.md only reflects it through line ${N}. The new content is exactly lines $((N+1))..${M} (previous line count ${N}, current line count ${M}). Read only those lines. Update docs/DESIGN.md from them, and end this turn with a write to docs/DESIGN.md: apply the delta to the affected sections and the Design-decisions-in-force list, and always refresh the header line 'Last regenerated' to today. Even when no section changes are needed, still update that header — never skip the write, because the sync cursor advances only on DESIGN.md's mtime, and a no-write continuation re-injects this same delta and loops. Do not read the whole log. Write the affected sections in ${LANG_DOC} (this project's content language — .claude/volens.lang, else ~/.config/volens/lang)."
 
-  # systemMessage renders for Stop only; SessionStart ignores it, so omit it.
-  if [ "$EVENT" = "Stop" ]; then
-    local MSG
-    if [ "$LANG_UI" = "zh" ]; then
-      if [ "$1" = "reset" ]; then
-        MSG="📝 DECISION-LOG 被改写,光标已重置,将重建 DESIGN.md"
-      else
-        MSG="📝 DECISION-LOG 新增 ${N}→${M} 行,Claude 将同步 DESIGN.md"
-      fi
+  # The user-facing notice follows the injection: if we inject, we say so; if the
+  # user sees nothing, nothing was injected. systemMessage is a TOP-LEVEL field —
+  # nested inside hookSpecificOutput it is silently ignored, and Claude Code logs
+  # only "unrecognized keys (ignored)". Both Stop and SessionStart render it; the
+  # earlier claim that SessionStart ignores it was never true and was never
+  # testable while the placement was wrong. (Verified 2026-09-14 against Claude
+  # Code's own session record: a payload carrying both placements produced a
+  # single `hook_system_message` attachment, from the top-level key.)
+  local MSG
+  if [ "$LANG_UI" = "zh" ]; then
+    if [ "$1" = "reset" ]; then
+      MSG="📝 DECISION-LOG 被改写,光标已重置,将重建 DESIGN.md"
     else
-      if [ "$1" = "reset" ]; then
-        MSG="📝 DECISION-LOG was rewritten; cursor reset, DESIGN.md will rebuild"
-      else
-        MSG="📝 DECISION-LOG grew (${N}→${M}); Claude will sync DESIGN.md"
-      fi
+      MSG="📝 DECISION-LOG 新增 ${N}→${M} 行,Claude 将同步 DESIGN.md"
     fi
-    printf '{"hookSpecificOutput":{"hookEventName":"%s","additionalContext":"%s","systemMessage":"%s"}}\n' "$EVENT" "$CONTEXT" "$MSG"
   else
-    printf '{"hookSpecificOutput":{"hookEventName":"%s","additionalContext":"%s"}}\n' "$EVENT" "$CONTEXT"
+    if [ "$1" = "reset" ]; then
+      MSG="📝 DECISION-LOG was rewritten; cursor reset, DESIGN.md will rebuild"
+    else
+      MSG="📝 DECISION-LOG grew (${N}→${M}); Claude will sync DESIGN.md"
+    fi
   fi
+  printf '{"systemMessage":"%s","hookSpecificOutput":{"hookEventName":"%s","additionalContext":"%s"}}\n' "$MSG" "$EVENT" "$CONTEXT"
 }
 
 if [ "$M" -lt "$N" ]; then
