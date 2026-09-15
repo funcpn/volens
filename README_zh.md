@@ -81,7 +81,7 @@
 如果 `git`不能访问 GitHub，可以改用下载：
 
 1. 在本仓库主页，点上方绿色的 **Code** 按钮 → **Download ZIP**
-2. 解压。解出来叫 `volens-master`，**把它改名为 `volens`**
+2. 解压。解出来的文件夹名带分支后缀（比如 `volens-master`），**把它改名为 `volens`**
 3. 整个文件夹移到你的 skills 目录下：
    - macOS / Linux：`~/.claude/skills/`
    - Windows：`%USERPROFILE%\.claude\skills\`

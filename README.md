@@ -81,7 +81,7 @@ It surveys what already exists (**it will not overwrite anything**), sets the do
 If `git` can't reach GitHub, download instead:
 
 1. On this repository's main page, click the green **Code** button → **Download ZIP**
-2. Unzip it. The folder comes out as `volens-master` — **rename it to `volens`**
+2. Unzip it. The folder name carries a branch suffix (e.g. `volens-master`) — **rename it to `volens`**
 3. Move the whole folder into your skills directory:
    - macOS / Linux: `~/.claude/skills/`
    - Windows: `%USERPROFILE%\.claude\skills\`
