@@ -43,6 +43,27 @@ So `docs/DESIGN.md` is always a snapshot of the design "as of now" — derived f
 
 ---
 
+## What the hook does — and doesn't
+
+The sync script ships inside the plugin and runs on two events: `Stop` (a reply ends) and `SessionStart` (a session starts, is cleared, or is compacted). It is a shell script invoked from `hooks/hooks.json` with a 30-second timeout.
+
+**What it reads** — the *line count* of `docs/DECISION-LOG.md`, the number stored in `docs/.volens-cursor`, the *modification time* of `docs/DESIGN.md`, and your language preference (`~/.config/volens/lang`, or the project's `.claude/volens.lang`).
+
+That is the whole list. It never reads the contents of your log, your design doc, or your source code — it counts lines in one file and compares one timestamp.
+
+**What it writes** — exactly one file, `docs/.volens-cursor`. It does not write `docs/DESIGN.md` itself: it emits a prompt asking Claude to, and the cursor advances only once that write has landed.
+
+**What it doesn't do:**
+
+- **No network.** No HTTP, no sockets, no telemetry, no analytics. Nothing leaves your machine.
+- **No writes outside `docs/`.** It never touches your source, your `.claude/`, or your `CLAUDE.md`.
+- **No execution of anything from your project.** The script is fixed and ships with the plugin.
+- **No blocking.** It always exits 0, so it can only ever add context to the conversation — it cannot stop a turn or refuse a tool call.
+
+When there is nothing to sync it prints nothing. **Silence means nothing was injected — not that something failed.**
+
+---
+
 ## Install and first run
 
 Install volens in Claude Code. Two prerequisites:
