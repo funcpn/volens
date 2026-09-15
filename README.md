@@ -47,38 +47,70 @@ So `docs/DESIGN.md` is always a snapshot of the design "as of now" — derived f
 
 ## Install and first run
 
-Before you start, you'll need Claude Code and git on your machine.
+Before you start, you'll need **Claude Code**.
 
-volens is a standard plugin. Install it from inside Claude Code:
+There are two ways to install volens. **If reaching GitHub needs a proxy, or you're not sure `git` works on your machine, use the first one.**
 
+### Option 1: Download the ZIP (no git needed)
+
+All you need is a browser that can open GitHub.
+
+1. Open https://github.com/funcpn/volens
+2. Click the green **Code** button → **Download ZIP**
+3. Unzip it. The folder comes out as `volens-master` — **rename it to `volens`**
+4. Move the whole folder into your skills directory:
+   - macOS / Linux: `~/.claude/skills/`
+   - Windows: `%USERPROFILE%\.claude\skills\`
+
+   Create that directory if it doesn't exist. You should end up with `…/.claude/skills/volens/`, containing `.claude-plugin`, `skills` and `hooks`.
+5. Restart Claude Code. Run `claude plugin list` and confirm you see `volens@skills-dir` with status `✔ loaded`
+
+> If you're comfortable with git, steps 1–4 are one command instead, with the same result (it also needs GitHub to be reachable):
+>
+> ```sh
+> git clone https://github.com/funcpn/volens.git ~/.claude/skills/volens
+> ```
+
+### Option 2: Install from the marketplace (needs git and GitHub access)
+
+**Check these two first:**
+
+- **`git` is on your PATH.** On Windows, when installing Git for Windows, choose **"Git from the command line and also from 3rd-party software"** at the "Adjusting your PATH environment" step. If you pick "Use Git from Git Bash only", Git Bash still opens but `git` is not on PATH, and Claude Code won't find it.
+- **GitHub is reachable.** Note that **`git` does not automatically use your browser's or VPN's proxy.** If you run a proxy or VPN, you'll need to switch it to global mode, or configure the proxy for git separately.
+
+**Then type these one at a time, pressing Enter after each:**
+
+1. Type this:
+
+   ```
+   /plugin marketplace add https://github.com/funcpn/volens.git
+   ```
+
+   > Use the full URL. Don't use the `funcpn/volens` shorthand — it resolves to SSH, which fails on a machine with no GitHub key configured.
+
+2. Once that reports success, type this:
+
+   ```
+   /plugin install volens@volens
+   ```
+
+3. Restart Claude Code
+
+### Installing it for everyone on a project
+
+```sh
+claude plugin install volens@volens -s project
 ```
-/plugin marketplace add funcpn/volens
-/plugin install volens@volens
-```
 
-Restart your session. Then, in the project you want to bring under the structure:
+It writes one `enabledPlugins` line into the project's `.claude/settings.json`. Commit that line and **every collaborator who clones the repo gets it automatically**, instead of each installing it by hand.
+
+### Then, in the project you want to bring under the structure
 
 ```
 /volens:volens
 ```
 
 It surveys what already exists (**it will not overwrite anything**), sets the documentation language (once), ensures the CLAUDE.md contract module is in place, seeds `docs/DECISION-LOG.md`, and confirms the sync hook is live. From then on, whenever a design decision changes, append an entry to the log; the hook handles the rest.
-
-### For a single project
-
-From a terminal, add `-s project` and it writes one `enabledPlugins` line into the project's `.claude/settings.json`. Commit that line and **every collaborator who clones the repo gets it automatically**, instead of each installing it by hand:
-
-```sh
-claude plugin install volens@volens -s project
-```
-
-### Without the marketplace
-
-Cloned into a skills directory, volens is still a plugin, and the hook still ships with it:
-
-```sh
-git clone https://github.com/funcpn/volens.git ~/.claude/skills/volens
-```
 
 ---
 

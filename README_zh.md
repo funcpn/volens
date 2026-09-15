@@ -47,38 +47,70 @@
 
 ## 安装与首次运行
 
-开始之前，你的机器上得先装好 Claude Code 和 git。
+开始之前，你的机器上得先装好 **Claude Code**。
 
-「如意」是一个标准插件，在 Claude Code 里装上它：
+「如意」有两种装法。**如果你访问 GitHub 需要开代理，或者不确定 `git` 命令能不能用，走第一种。**
 
+### 装法一：下载压缩包（不依赖 git）
+
+只要浏览器能打开 GitHub 就行。
+
+1. 打开 https://github.com/funcpn/volens
+2. 点绿色的 **Code** 按钮 → **Download ZIP**
+3. 解压。解出来叫 `volens-master`，**把它改名为 `volens`**
+4. 整个文件夹移到你的 skills 目录下：
+   - macOS / Linux：`~/.claude/skills/`
+   - Windows：`%USERPROFILE%\.claude\skills\`
+
+   目录不存在就自己建。放好后路径是 `…/.claude/skills/volens/`，里面应该能看到 `.claude-plugin`、`skills`、`hooks` 三个文件夹。
+5. 重启 Claude Code。敲 `claude plugin list` 确认能看到 `volens@skills-dir`，状态是 `✔ loaded`
+
+> 会用 git 的话，第 1–4 步可以直接换成一条命令，效果一样（同样需要能访问 GitHub）：
+>
+> ```sh
+> git clone https://github.com/funcpn/volens.git ~/.claude/skills/volens
+> ```
+
+### 装法二：从市场安装（需要 git 且能访问 GitHub）
+
+**先确认这两条：**
+
+- **`git` 在 PATH 上。** Windows 装 Git for Windows 时，到「Adjusting your PATH environment」那一步要选 **「Git from the command line and also from 3rd-party software」**。只选了「Use Git from Git Bash only」的话，Git Bash 能打开，但 `git` 不在 PATH 上，Claude Code 会找不到它。
+- **能访问 GitHub。** 注意：**`git` 不会自动走浏览器或 VPN 的代理**。开着代理/VPN 的话，需要切到全局模式，或者单独给 git 配代理。
+
+**然后，一条一条敲，每条敲完按回车：**
+
+1. 敲这条：
+
+   ```
+   /plugin marketplace add https://github.com/funcpn/volens.git
+   ```
+
+   > 用完整地址。别用 `funcpn/volens` 这种简写 —— 简写会走 SSH，没配过 GitHub 密钥的机器会失败。
+
+2. 看到成功提示后，再敲这条：
+
+   ```
+   /plugin install volens@volens
+   ```
+
+3. 重启 Claude Code
+
+### 想让一个项目里所有人都自动装上
+
+```sh
+claude plugin install volens@volens -s project
 ```
-/plugin marketplace add funcpn/volens
-/plugin install volens@volens
-```
 
-装完重开会话。然后在你想纳入这套结构的项目里：
+它往项目的 `.claude/settings.json` 写一行 `enabledPlugins`。这一行提交入库之后，**协作者克隆下来就自动生效**，不用各自再去装一遍。
+
+### 然后，在你想纳入这套结构的项目里
 
 ```
 /volens:volens
 ```
 
 它会先勘察已有的东西（**不会覆盖**），设定文档语言（一次性），确保 CLAUDE.md 契约模块就位，种下 `docs/DECISION-LOG.md`，并确认同步 hook 已就位。之后，每当一个设计决策改变，就往日志里**追加**一条；剩下的交给 hook。
-
-### 只想给一个项目用
-
-在终端里加 `-s project`，它会往项目的 `.claude/settings.json` 写一行 `enabledPlugins`。这一行提交入库之后，**协作者克隆下来就自动生效**，不用各自再去装一遍：
-
-```sh
-claude plugin install volens@volens -s project
-```
-
-### 不用市场也行
-
-「如意」克隆到 skills 目录同样是一个插件，hook 一样随插件生效：
-
-```sh
-git clone https://github.com/funcpn/volens.git ~/.claude/skills/volens
-```
 
 ---
 
