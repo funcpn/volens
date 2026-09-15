@@ -44,6 +44,20 @@ if [ -f "$PROJ/.claude/volens.lang" ]; then
   LANG_DOC=$(tr -d '[:space:]' < "$PROJ/.claude/volens.lang")
 fi
 
+# Escape a string for embedding as a JSON value. Backslash is replaced FIRST:
+# every later substitution introduces backslashes of its own, and escaping those
+# would double them. Uses bash parameter substitution rather than a per-character
+# loop — the loop form is O(n^2) and takes tens of seconds on Windows Git Bash.
+json_escape() {
+  local s="$1"
+  s="${s//\\/\\\\}"
+  s="${s//\"/\\\"}"
+  s="${s//$'\n'/\\n}"
+  s="${s//$'\r'/\\r}"
+  s="${s//$'\t'/\\t}"
+  printf '%s' "$s"
+}
+
 emit() {
   # $1: "sync" -> delta inject, "reset" -> full rebuild
   local CONTEXT="The decision log docs/DECISION-LOG.md is at line ${M}, but docs/DESIGN.md only reflects it through line ${N}. The new content is exactly lines $((N+1))..${M} (previous line count ${N}, current line count ${M}). Read only those lines. Update docs/DESIGN.md from them, and end this turn with a write to docs/DESIGN.md: apply the delta to the affected sections and the Design-decisions-in-force list, and always refresh the header line 'Last regenerated' to today. Even when no section changes are needed, still update that header — never skip the write, because the sync cursor advances only on DESIGN.md's mtime, and a no-write continuation re-injects this same delta and loops. Do not read the whole log. Write the affected sections in ${LANG_DOC} (this project's content language — .claude/volens.lang, else ~/.config/volens/lang)."
@@ -70,7 +84,10 @@ emit() {
       MSG="📝 DECISION-LOG grew (${N}→${M}); Claude will sync DESIGN.md"
     fi
   fi
-  printf '{"systemMessage":"%s","hookSpecificOutput":{"hookEventName":"%s","additionalContext":"%s"}}\n' "$MSG" "$EVENT" "$CONTEXT"
+  # Every interpolated value is escaped: CONTEXT embeds this project's content
+  # language, which comes from a file the project owns.
+  printf '{"systemMessage":"%s","hookSpecificOutput":{"hookEventName":"%s","additionalContext":"%s"}}\n' \
+    "$(json_escape "$MSG")" "$(json_escape "$EVENT")" "$(json_escape "$CONTEXT")"
 }
 
 if [ "$M" -lt "$N" ]; then
