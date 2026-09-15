@@ -15,6 +15,30 @@ set -euo pipefail
 # "SessionStart"). Required in hookSpecificOutput.
 EVENT="${1:-Stop}"
 
+# Claude Code hands a Stop hook a JSON payload on stdin. If this Stop is the
+# follow-up to a continuation we ourselves triggered, do nothing: Claude Code
+# documents stop_hook_active for exactly this — "check stop_hook_active in the
+# input and return success while it's true". Without it, a write that never
+# lands (permission denied, read-only filesystem, a model that doesn't comply)
+# re-injects the same delta on every subsequent Stop and the session never ends
+# — measured at 98 injections in 240s before the run was killed by hand.
+# The cost of skipping is at most a deferred cursor fast-forward: the next
+# user-turn Stop (where the flag is false) or SessionStart catches it up.
+# Scoped to Stop on purpose — the field belongs to the Stop family and is not
+# sent to SessionStart, so a stray value there must not suppress the injection.
+if [ "$EVENT" = "Stop" ] && [ ! -t 0 ]; then
+  # `read -t` bounds the wait. A bare `cat` blocks forever when stdin is neither
+  # a terminal nor a closed pipe — which is exactly what happens when a model or
+  # a person runs the hook by hand inside a harness that holds stdin open. CC
+  # itself always writes the payload and closes the pipe, so this returns at once
+  # in normal operation.
+  HOOK_INPUT=""
+  IFS= read -r -d '' -t 2 HOOK_INPUT 2>/dev/null || true
+  case "$(printf '%s' "$HOOK_INPUT" | tr -d ' \n\t')" in
+    *'"stop_hook_active":true'*) exit 0 ;;
+  esac
+fi
+
 PROJ="${CLAUDE_PROJECT_DIR:-$(pwd)}"
 LOG="$PROJ/docs/DECISION-LOG.md"
 DESIGN="$PROJ/docs/DESIGN.md"
@@ -60,7 +84,7 @@ json_escape() {
 
 emit() {
   # $1: "sync" -> delta inject, "reset" -> full rebuild
-  local CONTEXT="The decision log docs/DECISION-LOG.md is at line ${M}, but docs/DESIGN.md only reflects it through line ${N}. The new content is exactly lines $((N+1))..${M} (previous line count ${N}, current line count ${M}). Read only those lines. Update docs/DESIGN.md from them, and end this turn with a write to docs/DESIGN.md: apply the delta to the affected sections and the Design-decisions-in-force list, and always refresh the header line 'Last regenerated' to today. Even when no section changes are needed, still update that header — never skip the write, because the sync cursor advances only on DESIGN.md's mtime, and a no-write continuation re-injects this same delta and loops. Do not read the whole log. Write the affected sections in ${LANG_DOC} (this project's content language — .claude/volens.lang, else ~/.config/volens/lang)."
+  local CONTEXT="The decision log docs/DECISION-LOG.md is at line ${M}, but docs/DESIGN.md only reflects it through line ${N}. The new content is exactly lines $((N+1))..${M} (previous line count ${N}, current line count ${M}). Read only those lines. Update docs/DESIGN.md from them, and end this turn with a write to docs/DESIGN.md: apply the delta to the affected sections and the Design-decisions-in-force list, and always refresh the header line 'Last regenerated' to today. Even when no section changes are needed, still update that header — never skip the write, because the sync cursor advances only on DESIGN.md's mtime, and a no-write continuation re-injects this same delta and loops. If the write cannot land at all — permission denied, a read-only filesystem — stop after the first failure and tell the user plainly which file was refused and why: a silent failure leaves the design doc stale with nothing to explain it. Do not read the whole log. Write the affected sections in ${LANG_DOC} (this project's content language — .claude/volens.lang, else ~/.config/volens/lang)."
 
   # The user-facing notice follows the injection: if we inject, we say so; if the
   # user sees nothing, nothing was injected. systemMessage is a TOP-LEVEL field —
