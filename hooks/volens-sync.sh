@@ -53,18 +53,25 @@ N=0
 N=${N:-0}
 
 # Two languages. Communication (the user-facing notification) follows the
-# user-level preference in ~/.config/volens/lang (a per-machine setting that
+# user-level preference at XDG_CONFIG_HOME/volens/lang, else ~/.config/volens/lang
+# (a per-machine setting that
 # cannot live in the plugin directory, which is shared and replaced on update).
-# Content (what DESIGN.md is written in) follows the project's committed
-# .claude/volens.lang, falling back to that same user-level preference. Both
-# default to en.
+# Content (what DESIGN.md is written in) follows the project's committed pin at
+# .volens/lang, falling back to that same user-level preference. Both default
+# to en. Projects scaffolded before the pin moved keep theirs at
+# .claude/volens.lang, which is still read — the skill moves it on the next
+# refresh; no project has to be touched by hand.
+# XDG_CONFIG_HOME wins when it is set and non-empty, as it does for other CLIs.
 LANG_UI="en"
-if [ -f "$HOME/.config/volens/lang" ]; then
-  LANG_UI=$(tr -d '[:space:]' < "$HOME/.config/volens/lang")
+LANG_UI_FILE="${XDG_CONFIG_HOME:-$HOME/.config}/volens/lang"
+if [ -f "$LANG_UI_FILE" ]; then
+  LANG_UI=$(tr -d '[:space:]' < "$LANG_UI_FILE")
 fi
 
 LANG_DOC="$LANG_UI"
-if [ -f "$PROJ/.claude/volens.lang" ]; then
+if [ -f "$PROJ/.volens/lang" ]; then
+  LANG_DOC=$(tr -d '[:space:]' < "$PROJ/.volens/lang")
+elif [ -f "$PROJ/.claude/volens.lang" ]; then
   LANG_DOC=$(tr -d '[:space:]' < "$PROJ/.claude/volens.lang")
 fi
 
@@ -84,7 +91,7 @@ json_escape() {
 
 emit() {
   # $1: "sync" -> delta inject, "reset" -> full rebuild
-  local CONTEXT="The decision log docs/DECISION-LOG.md is at line ${M}, but docs/DESIGN.md only reflects it through line ${N}. The new content is exactly lines $((N+1))..${M} (previous line count ${N}, current line count ${M}). Read only those lines. Update docs/DESIGN.md from them, and end this turn with a write to docs/DESIGN.md: apply the delta to the affected sections and the Design-decisions-in-force list, and always refresh the header line 'Last regenerated' to today. Even when no section changes are needed, still update that header — never skip the write, because the sync cursor advances only on DESIGN.md's mtime, and a no-write continuation re-injects this same delta and loops. If the write cannot land at all — permission denied, a read-only filesystem — stop after the first failure and tell the user plainly which file was refused and why: a silent failure leaves the design doc stale with nothing to explain it. Do not read the whole log. Write the affected sections in ${LANG_DOC} (this project's content language — .claude/volens.lang, else ~/.config/volens/lang)."
+  local CONTEXT="The decision log docs/DECISION-LOG.md is at line ${M}, but docs/DESIGN.md only reflects it through line ${N}. The new content is exactly lines $((N+1))..${M} (previous line count ${N}, current line count ${M}). Read only those lines. Update docs/DESIGN.md from them, and end this turn with a write to docs/DESIGN.md: apply the delta to the affected sections and the Design-decisions-in-force list, and always refresh the header line 'Last regenerated' to today. Even when no section changes are needed, still update that header — never skip the write, because the sync cursor advances only on DESIGN.md's mtime, and a no-write continuation re-injects this same delta and loops. If the write cannot land at all — permission denied, a read-only filesystem — stop after the first failure and tell the user plainly which file was refused and why: a silent failure leaves the design doc stale with nothing to explain it. Do not read the whole log. Write the affected sections in ${LANG_DOC} (this project's content language — .volens/lang, else ~/.config/volens/lang)."
 
   # The user-facing notice follows the injection: if we inject, we say so; if the
   # user sees nothing, nothing was injected. systemMessage is a TOP-LEVEL field —

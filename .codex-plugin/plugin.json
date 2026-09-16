@@ -1,0 +1,37 @@
+{
+  "name": "volens",
+  "version": "0.2.0",
+  "description": "Keeps a project's documentation in step with its decisions: an append-only decision log, a design snapshot derived from it, and a hook that keeps the snapshot fresh without being asked.",
+  "author": {
+    "name": "Chao Fan",
+    "email": "142787769+funcpn@users.noreply.github.com"
+  },
+  "homepage": "https://github.com/funcpn/volens",
+  "repository": "https://github.com/funcpn/volens",
+  "license": "MIT",
+  "keywords": [
+    "documentation",
+    "decision-log",
+    "design-doc",
+    "adr",
+    "hooks"
+  ],
+  "skills": "./skills/",
+  "hooks": "./hooks/hooks-codex.json",
+  "interface": {
+    "displayName": "volens",
+    "shortDescription": "Project docs that follow your decisions",
+    "longDescription": "volens maintains three layers of project documentation — a marker-delimited contract module in the project's instruction file, an append-only decision log, and a design snapshot derived from it — and keeps that snapshot fresh automatically as decisions change.",
+    "developerName": "Chao Fan",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/funcpn/volens",
+    "defaultPrompt": [
+      "Set up the volens documentation structure in this project.",
+      "Record a design decision in the decision log."
+    ]
+  }
+}

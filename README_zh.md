@@ -2,7 +2,7 @@
 
 > 中文版 | [English](README.md)
 
-「如意」是一款针对 Claude Code 开发的插件（以后可能会适配不同 Agent），它维护一套能让项目文档紧跟决策、始终保持新鲜的结构 —— 设计文档自动跟随你的每一次决策，而你无需操心。并且你只需要在项目下，向 Claude Code 发送过一次 `/volens:volens`，「法术」即永久生效，无需在心意变化时再次施法。
+「如意」是一款面向编码 Agent 的插件 —— 今天支持 Claude Code 和 Codex —— 它维护一套能让项目文档紧跟决策、始终保持新鲜的结构：设计文档自动跟随你的每一次决策，而你无需操心。并且你只需要在一个项目里启用过一次它，「法术」即永久生效，无需在心意变化时再次施法。
 
 ## 为什么你需要「如意」
 
@@ -24,10 +24,10 @@
 
 执行一次 `/volens:volens`，如意会先勘察项目里已有的东西（**不会覆盖**），然后在项目里就位下列文件：
 
-- **`CLAUDE.md` 的契约模块** —— 文件不存在则新建一个只含契约模块的文件；已存在则只在标记之间插入或更新契约模块：「文档模型 + 工作约定」，其余内容一律不动。
+- **指令文件的契约模块** —— Claude Code 下是 `CLAUDE.md`，Codex 下是 `AGENTS.md`。文件不存在则新建一个只含契约模块的文件；已存在则只在标记之间插入或更新契约模块：「文档模型 + 工作约定」，其余内容一律不动。
 - **`docs/DECISION-LOG.md`** —— 一个只追加的**决策日志**，种下第一条「采用本结构」的记录；以后每个设计决策都追加到这里，历史只增不改。
 - **`docs/DESIGN.md`** —— 由日志派生的**设计快照**。已有项目在搭建时即生成；全新项目则先跳过，由 hook 在第一次同步时从决策日志生成。
-- **`.claude/volens.lang`** —— 本项目文档用什么语言记录的「项目级决定」（如 `zh`/`en`），只问一次、提交入库。
+- **`.volens/lang`** —— 本项目文档用什么语言记录的「项目级决定」（如 `zh`/`en`），只问一次、提交入库。（早先版本把它放在 `.claude/volens.lang`；老项目里的那份会在下一次刷新时自动搬过来。）
 - **`docs/.volens-cursor`** —— hook 的游标：记录「设计文档已反映到日志的第几行」。纯运行状态，会写进 `.gitignore`，不入库。
 
 同步脚本本身随插件走，**不会写进你的项目** —— 项目里只有上面这些属于你自己的文件。
@@ -45,9 +45,9 @@
 
 ## hook 到底做了什么 —— 以及它不做什么
 
-同步脚本随插件分发，在两个时机运行：`Stop`（一次回复结束）和 `SessionStart`（会话开始、被清空或被压缩）。它是一个由 `hooks/hooks.json` 调用的 shell 脚本，超时 30 秒。
+同步脚本随插件分发。在 Claude Code 下它由 `hooks/hooks.json` 注册，在 `Stop`（一次回复结束）和 `SessionStart`（会话开始、被清空或被压缩）两个时机运行；在 Codex 下由 `hooks/hooks-codex.json` 注册，在 `SessionStart` 和 `UserPromptSubmit`（你下一次发消息时）运行。它是同一个 shell 脚本。
 
-**它读什么** —— `docs/DECISION-LOG.md` 的**行数**、`docs/.volens-cursor` 里存的那个数字、`docs/DESIGN.md` 的**修改时间**，以及你的语言偏好（`~/.config/volens/lang`，或项目里的 `.claude/volens.lang`）。
+**它读什么** —— `docs/DECISION-LOG.md` 的**行数**、`docs/.volens-cursor` 里存的那个数字、`docs/DESIGN.md` 的**修改时间**，以及你的语言偏好（`~/.config/volens/lang` —— 设置了 `XDG_CONFIG_HOME` 就在它下面 —— 或项目里的 `.volens/lang`）。
 
 就这些。**它不读你日志的内容、不读设计文档的内容、不读你的源代码** —— 它只数一个文件的行数、比一个时间戳。
 
@@ -56,7 +56,7 @@
 **它不做什么：**
 
 - **不联网。** 没有 HTTP、没有 socket、没有遥测、没有统计。任何东西都不会离开你的机器。
-- **不写 `docs/` 以外的任何地方。** 不碰你的源码、不碰 `.claude/`、不碰 `CLAUDE.md`。
+- **不写 `docs/` 以外的任何地方。** 不碰你的源码，不碰你的指令文件；`.volens/lang` 那份语言它只读、不写。
 - **不执行你项目里的任何东西。** 脚本是固定的，随插件走。
 - **不阻断任何操作。** 它永远 `exit 0`，只能往对话里追加信息，拦不住一次回复、也拒绝不了工具调用。
 
@@ -95,7 +95,31 @@
 /volens:volens
 ```
 
-它会先勘察已有的东西（**不会覆盖**），设定文档语言（一次性），确保 CLAUDE.md 契约模块就位，种下 `docs/DECISION-LOG.md`，并确认同步 hook 已就位。之后，每当一个设计决策改变，就往日志里**追加**一条；剩下的交给 hook。
+它会先勘察已有的东西（**不会覆盖**），设定文档语言（一次性），确保指令文件的契约模块就位，种下 `docs/DECISION-LOG.md`，并确认同步 hook 已就位。之后，每当一个设计决策改变，就往日志里**追加**一条；剩下的交给 hook。
+
+### 在 Codex 里使用
+
+「如意」同样作为插件装在 Codex 里，走 Codex 自己的市场机制：
+
+1. 添加市场：
+
+   ```
+   codex plugin marketplace add https://github.com/funcpn/volens
+   ```
+
+2. 安装：
+
+   ```
+   codex plugin add volens@volens
+   ```
+
+3. 确认：`codex plugin list` 里能看到 `volens`，状态是 `installed, enabled`。
+
+**第一次运行要信任一次 hook。** 第一次在 Codex 里开会话时会看到 `Hooks need review`，选 **Trust all and continue**。不选的话插件装上了，但设计文档不会自动更新。以后升级「如意」**不需要**重新信任 —— 只有它改动了 hook 命令本身才会再问一次。
+
+装好之后，在你想纳入这套结构的项目里，让 Codex 用一次「如意」的 skill（比如直接说：「用 volens 给这个项目建立文档结构」）。它会做和 Claude Code 下一样的事，只是契约模块落在 `AGENTS.md` 里。
+
+同步时机和 Claude Code 略有不同：Codex 下发生在 `SessionStart`（会话开始）和 `UserPromptSubmit`（你下一次发消息时）。也就是说会话中途记下的决策，会在你下一次输入时落到设计文档里。
 
 ### 备选安装方法：下载压缩包
 
@@ -117,4 +141,3 @@
 ## 许可证
 
 本项目基于 MIT 许可证开源，详见 [LICENSE](LICENSE)。
-

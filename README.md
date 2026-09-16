@@ -2,7 +2,7 @@
 
 > English | [中文](README_zh.md)
 
-**volens** is a plugin built for Claude Code (it may support other agents later). It maintains a structure that keeps a project's documentation in step with its decisions and permanently fresh — the design doc follows every decision you make, and you never have to think about it. And you only need to send `/volens:volens` once in a project: the spell stays cast, with no need to cast it again each time you change your mind.
+**volens** is a plugin for coding agents — Claude Code and Codex today. It maintains a structure that keeps a project's documentation in step with its decisions and permanently fresh — the design doc follows every decision you make, and you never have to think about it. And you only need to set it up once in a project: the spell stays cast, with no need to cast it again each time you change your mind.
 
 ## Why you need volens
 
@@ -24,10 +24,10 @@ volens keeps the design doc in step with your thinking. Let Claude Code implemen
 
 Run `/volens:volens` once and volens surveys what already exists in the project (**it will not overwrite anything**), then puts the following files in place:
 
-- **The contract module in `CLAUDE.md`** — if the file doesn't exist, it creates one containing only the contract module; if it does, it inserts or updates the module between the markers, holding the documentation model + working agreements. Nothing else in the file is touched.
+- **The contract module in the project's instruction file** — `CLAUDE.md` on Claude Code, `AGENTS.md` on Codex. If the file doesn't exist, it creates one containing only the contract module; if it does, it inserts or updates the module between the markers, holding the documentation model + working agreements. Nothing else in the file is touched.
 - **`docs/DECISION-LOG.md`** — an append-only **decision log**, seeded with one entry recording the adoption of this structure. Every later design decision is appended here; history only grows, never changes.
 - **`docs/DESIGN.md`** — a **design snapshot** derived from the log. An existing project gets one at scaffold time; a brand-new project skips it, and the hook generates it from the decision log on the first sync.
-- **`.claude/volens.lang`** — the "project-level decision" of which language this project's docs are recorded in (e.g. `zh`/`en`), asked once and committed.
+- **`.volens/lang`** — the "project-level decision" of which language this project's docs are recorded in (e.g. `zh`/`en`), asked once and committed. (Earlier versions wrote it to `.claude/volens.lang`; an older project's file is moved automatically on the next refresh.)
 - **`docs/.volens-cursor`** — the hook's cursor: it records how far into the log the design doc has been reflected. Pure runtime state; written to `.gitignore`, never committed.
 
 The sync script itself ships with the plugin and is **never written into your project** — the files above are the only ones volens adds there.
@@ -45,9 +45,9 @@ So `docs/DESIGN.md` is always a snapshot of the design "as of now" — derived f
 
 ## What the hook does — and doesn't
 
-The sync script ships inside the plugin and runs on two events: `Stop` (a reply ends) and `SessionStart` (a session starts, is cleared, or is compacted). It is a shell script invoked from `hooks/hooks.json` with a 30-second timeout.
+The sync script ships inside the plugin. On Claude Code it is registered by `hooks/hooks.json` and runs on `Stop` (a reply ends) and `SessionStart` (a session starts, is cleared, or is compacted); on Codex it is registered by `hooks/hooks-codex.json` and runs on `SessionStart` and `UserPromptSubmit` (your next message). It is one shell script either way.
 
-**What it reads** — the *line count* of `docs/DECISION-LOG.md`, the number stored in `docs/.volens-cursor`, the *modification time* of `docs/DESIGN.md`, and your language preference (`~/.config/volens/lang`, or the project's `.claude/volens.lang`).
+**What it reads** — the *line count* of `docs/DECISION-LOG.md`, the number stored in `docs/.volens-cursor`, the *modification time* of `docs/DESIGN.md`, and your language preference (`~/.config/volens/lang` — or under `XDG_CONFIG_HOME` when that is set — or the project's `.volens/lang`).
 
 That is the whole list. It never reads the contents of your log, your design doc, or your source code — it counts lines in one file and compares one timestamp.
 
@@ -56,7 +56,7 @@ That is the whole list. It never reads the contents of your log, your design doc
 **What it doesn't do:**
 
 - **No network.** No HTTP, no sockets, no telemetry, no analytics. Nothing leaves your machine.
-- **No writes outside `docs/`.** It never touches your source, your `.claude/`, or your `CLAUDE.md`.
+- **No writes outside `docs/`.** It never touches your source or your instruction file, and it only ever reads `.volens/lang`.
 - **No execution of anything from your project.** The script is fixed and ships with the plugin.
 - **No blocking.** It always exits 0, so it can only ever add context to the conversation — it cannot stop a turn or refuse a tool call.
 
@@ -95,7 +95,31 @@ Claude Code has to be **restarted once** for the plugin to load. After that, in 
 /volens:volens
 ```
 
-It surveys what already exists (**it will not overwrite anything**), sets the documentation language (once), ensures the CLAUDE.md contract module is in place, seeds `docs/DECISION-LOG.md`, and confirms the sync hook is live. From then on, whenever a design decision changes, append an entry to the log; the hook handles the rest.
+It surveys what already exists (**it will not overwrite anything**), sets the documentation language (once), ensures the contract module is in place, seeds `docs/DECISION-LOG.md`, and confirms the sync hook is live. From then on, whenever a design decision changes, append an entry to the log; the hook handles the rest.
+
+### Using it in Codex
+
+volens installs into Codex through Codex's own plugin marketplace:
+
+1. Add the marketplace:
+
+   ```
+   codex plugin marketplace add https://github.com/funcpn/volens
+   ```
+
+2. Install:
+
+   ```
+   codex plugin add volens@volens
+   ```
+
+3. Confirm: `codex plugin list` shows `volens` as `installed, enabled`.
+
+**The first run asks you to trust the hooks once.** On your first Codex session you will see `Hooks need review` — choose **Trust all and continue**. Without it the plugin is installed but the design snapshot never updates. Upgrades do **not** ask again; only a change to the hook command itself would.
+
+Once installed, have Codex run volens's skill in the project you want brought under the structure (for example: "set up the volens documentation structure in this project"). It does the same work as on Claude Code, with the contract module landing in `AGENTS.md`.
+
+The sync runs at slightly different moments than on Claude Code: on Codex it fires on `SessionStart` (a session begins) and `UserPromptSubmit` (your next message). A decision recorded mid-session therefore lands in the design snapshot at your next input.
 
 ### Alternative: download the ZIP
 

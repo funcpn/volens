@@ -2,7 +2,7 @@
 
 Append-only record of design decisions. Never rewrite history — add a new dated entry when a decision changes. A newer entry supersedes older ones where they conflict.
 
-*Content language follows the project's `.claude/volens.lang`, else the skill's `.lang` (default `en`); this template defines the structure only.*
+*Content language follows the project's `.volens/lang`, else the user-level `~/.config/volens/lang` (default `en`); this template defines the structure only.*
 
 ## Entry template
 
