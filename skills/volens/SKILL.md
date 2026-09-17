@@ -30,7 +30,7 @@ Content under `docs/` (log entries and DESIGN.md) is written in the project's **
 
 ### Scaffold (new / unfamiliar codebase)
 
-First-adoption only. **If this project is already under volens — its instruction file carries the `<!-- volens contract start/end -->` markers, or `docs/DECISION-LOG.md` exists with a real history — do not scaffold. Never create, seed, overwrite, or regenerate `DECISION-LOG.md` or `DESIGN.md`.** Run a *refresh-verify* instead: apply the Refresh procedure, changing only genuine drift — contract module stale or missing → re-sync it (step 4 logic); `DESIGN.md` behind the log → apply the delta (if the hook is registered it usually already did this at SessionStart); no content-language pin at either path → ask once (step 2 logic), and a pin still at the legacy path → move it; `docs/.volens-cursor` missing from `.gitignore` → add it (step 7 logic). Then report the state. Repairs, never rebuilds: the create/seed steps below exist only for the first adoption.
+First-adoption only. **If this project is already under volens — its instruction file carries the `<!-- volens contract start/end -->` markers, or `docs/DECISION-LOG.md` exists with a real history — do not scaffold. Never create, seed, overwrite, or regenerate `DECISION-LOG.md` or `DESIGN.md`.** Run a *refresh-verify* instead: apply the Refresh procedure, changing only genuine drift — contract module stale or missing → re-sync it (step 4 logic); `DESIGN.md` behind the log → apply the delta (if the hook is registered it usually already did this — at `SessionStart` on Claude Code, at `UserPromptSubmit` on Codex); no content-language pin at either path → ask once (step 2 logic), and a pin still at the legacy path → move it; `docs/.volens-cursor` missing from `.gitignore` → add it (step 7 logic). Then report the state. Repairs, never rebuilds: the create/seed steps below exist only for the first adoption.
 
 1. **Survey.** Check what already exists: `CLAUDE.md` and `AGENTS.md`, `docs/`, `.gitignore`, existing notes. Integrate — don't clobber.
 2. **Set the two languages.** volens separates *communication* (how it talks to the user) from *content* (what language this project's docs are written in).
@@ -50,7 +50,7 @@ First-adoption only. **If this project is already under volens — its instructi
 7. **Make the hook effective in this project.** The sync script ships with the plugin — **nothing is copied into the project and no settings file is edited.** One thing remains:
    - Add `docs/.volens-cursor` to the project's `.gitignore` — it is hook-maintained machine state, never committed.
 
-   The hook then runs on its own — at every `Stop` and `SessionStart` on Claude Code, at every `SessionStart` and `UserPromptSubmit` on Codex. State this in the report.
+   The hook then runs on its own — at every `Stop` and `SessionStart` on Claude Code, at every `UserPromptSubmit` on Codex. State this in the report.
 8. **Report.** Summarize what was created, what still needs filling, and open questions. State plainly which instruction file the contract module went into, what it contains, and what language it was written in, and that this project's docs language is pinned in `.volens/lang` (commit that file with the repo). Where the harness has a convention for a gitignored local file beside it (Claude Code: `CLAUDE.local.md`), offer to keep personal notes there rather than in team-shared files.
 
 ### Append (a design decision changes)
