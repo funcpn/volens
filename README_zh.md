@@ -35,7 +35,7 @@
 这些文件就位后，日常的「保鲜」由一条 **追加 → 察觉 → 增量同步** 的循环自动完成：
 
 1. **决策落笔** —— 你每做一次设计决策，就往 `docs/DECISION-LOG.md` 追加一条（Context → Decision → Consequences），只追加、不改写历史。
-2. **Hook 察觉** —— 每个会话时机同步脚本自动运行（Claude Code：`Stop`（一次回复结束）和 `SessionStart`（会话开始）；Codex：`SessionStart` 和 `UserPromptSubmit`（你下一次发消息）），比较日志行数与 `docs/.volens-cursor` 游标。
+2. **Hook 察觉** —— 每个会话时机同步脚本自动运行（Claude Code：`Stop`（一次回复结束）和 `SessionStart`（会话开始）；Codex：`UserPromptSubmit`（你每一次发消息）），比较日志行数与 `docs/.volens-cursor` 游标。
 3. **增量注入** —— 日志比游标多出几行，就把「那几行」作为额外上下文塞给 Agent，请它据此同步；若设计文档已最新，则静默快进游标。
 4. **局部重生成** —— Agent 只更新设计文档中受影响的章节、「Design decisions in force」列表和「Last regenerated」头部，不重读整本日志、也不整篇重写；若日志被改写或回滚（行数变少），则重置游标、提示完整重建 `docs/DESIGN.md`。
 
@@ -45,7 +45,7 @@
 
 ## hook 到底做了什么 —— 以及它不做什么
 
-同步脚本随插件分发。在 Claude Code 下它由 `hooks/hooks.json` 注册，在 `Stop`（一次回复结束）和 `SessionStart`（会话开始、被清空或被压缩）两个时机运行；在 Codex 下由 `hooks/hooks-codex.json` 注册，在 `SessionStart` 和 `UserPromptSubmit`（你下一次发消息时）运行。它是同一个 shell 脚本。
+同步脚本随插件分发。在 Claude Code 下它由 `hooks/hooks.json` 注册，在 `Stop`（一次回复结束）和 `SessionStart`（会话开始、被清空或被压缩）两个时机运行；在 Codex 下由 `hooks/hooks-codex.json` 注册，只在 `UserPromptSubmit`（你每一次发消息时）运行。它是同一个 shell 脚本。
 
 **它读什么** —— `docs/DECISION-LOG.md` 的**行数**、`docs/.volens-cursor` 里存的那个数字、`docs/DESIGN.md` 的**修改时间**，以及你的语言偏好（`~/.config/volens/lang` —— 设置了 `XDG_CONFIG_HOME` 就在它下面 —— 或项目里的 `.volens/lang`）。
 

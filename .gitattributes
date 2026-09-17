@@ -2,3 +2,7 @@
 # (Git for Windows defaults core.autocrlf=true, which would make the
 # sync hook a syntax error for anyone who clones this repo there).
 *.sh text eol=lf
+
+# The polyglot hook dispatcher is parsed by cmd on Windows and by bash on
+# Unix, so it has to keep LF as well - a CRLF checkout breaks the bash half.
+*.cmd text eol=lf

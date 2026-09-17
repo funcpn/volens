@@ -35,7 +35,7 @@ The sync script itself ships with the plugin and is **never written into your pr
 With those in place, day-to-day freshness runs on an **append → notice → incremental sync** loop:
 
 1. **The decision lands** — each time you make a design decision, append an entry to `docs/DECISION-LOG.md` (Context → Decision → Consequences). Append only; never rewrite history.
-2. **The hook notices** — the sync script runs automatically at every session moment (Claude Code: `Stop` (a reply ends) and `SessionStart` (a session begins); Codex: `SessionStart` and `UserPromptSubmit` (your next message)), comparing the log's line count against the `docs/.volens-cursor` cursor.
+2. **The hook notices** — the sync script runs automatically at every session moment (Claude Code: `Stop` (a reply ends) and `SessionStart` (a session begins); Codex: `UserPromptSubmit`, on every message you send), comparing the log's line count against the `docs/.volens-cursor` cursor.
 3. **The delta is injected** — if the log has lines beyond the cursor, exactly those lines are handed to the agent as additional context to sync from; if the design doc is already current, the cursor is silently fast-forwarded.
 4. **Only the affected parts are regenerated** — the agent updates only the affected sections of the design doc, the "Design decisions in force" list, and the "Last regenerated" header. It doesn't re-read the whole log or rewrite the whole document. If the log was rewritten or rolled back (line count drops), the cursor is reset and a full rebuild of `docs/DESIGN.md` is requested.
 
@@ -45,7 +45,7 @@ So `docs/DESIGN.md` is always a snapshot of the design "as of now" — derived f
 
 ## What the hook does — and doesn't
 
-The sync script ships inside the plugin. On Claude Code it is registered by `hooks/hooks.json` and runs on `Stop` (a reply ends) and `SessionStart` (a session starts, is cleared, or is compacted); on Codex it is registered by `hooks/hooks-codex.json` and runs on `SessionStart` and `UserPromptSubmit` (your next message). It is one shell script either way.
+The sync script ships inside the plugin. On Claude Code it is registered by `hooks/hooks.json` and runs on `Stop` (a reply ends) and `SessionStart` (a session starts, is cleared, or is compacted); on Codex it is registered by `hooks/hooks-codex.json` and runs on `UserPromptSubmit` only — every message you send. It is one shell script either way.
 
 **What it reads** — the *line count* of `docs/DECISION-LOG.md`, the number stored in `docs/.volens-cursor`, the *modification time* of `docs/DESIGN.md`, and your language preference (`~/.config/volens/lang` — or under `XDG_CONFIG_HOME` when that is set — or the project's `.volens/lang`).
 

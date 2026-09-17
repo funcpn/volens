@@ -106,13 +106,13 @@ emit() {
     if [ "$1" = "reset" ]; then
       MSG="📝 DECISION-LOG 被改写,光标已重置,将重建 DESIGN.md"
     else
-      MSG="📝 DECISION-LOG 新增 ${N}→${M} 行,Claude 将同步 DESIGN.md"
+      MSG="📝 DECISION-LOG 新增 ${N}→${M} 行,如意将同步 DESIGN.md"
     fi
   else
     if [ "$1" = "reset" ]; then
       MSG="📝 DECISION-LOG was rewritten; cursor reset, DESIGN.md will rebuild"
     else
-      MSG="📝 DECISION-LOG grew (${N}→${M}); Claude will sync DESIGN.md"
+      MSG="📝 DECISION-LOG grew (${N}→${M}); volens will sync DESIGN.md"
     fi
   fi
   # Every interpolated value is escaped: CONTEXT embeds this project's content
