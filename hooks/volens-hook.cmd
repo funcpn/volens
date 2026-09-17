@@ -41,12 +41,17 @@ exit /b %ERRORLEVEL%
 REM Accept the first candidate that exists and actually runs.
 if defined BASH exit /b 0
 if "%~1"=="" exit /b 0
-if not "%~1:WindowsApps=%"=="%~1" exit /b 0
-if not "%~1:System32=%"=="%~1" exit /b 0
-if not exist "%~1" exit /b 0
-"%~1" --version >nul 2>nul
+REM Land the candidate in a variable first. An argument reference is not a
+REM variable name, so the variable-substring form does not apply to it - and
+REM cmd aborts the whole file at parse time when it meets one here, so the hook
+REM never runs at all. Measured on Windows 11 with a two-line repro, 2026-09-17.
+set "CAND=%~1"
+if not "%CAND:WindowsApps=%"=="%CAND%" exit /b 0
+if not "%CAND:System32=%"=="%CAND%" exit /b 0
+if not exist "%CAND%" exit /b 0
+"%CAND%" --version >nul 2>nul
 if errorlevel 1 exit /b 0
-set "BASH=%~1"
+set "BASH=%CAND%"
 exit /b 0
 CMDBLOCK
 
