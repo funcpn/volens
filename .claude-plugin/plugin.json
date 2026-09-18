@@ -1,7 +1,7 @@
 {
   "name": "volens",
   "description": "Keeps a project's documentation in step with its decisions: an append-only decision log, a design snapshot derived from it, and a hook that keeps the snapshot fresh without being asked.",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "author": {
     "name": "Chao Fan",
     "email": "142787769+funcpn@users.noreply.github.com"

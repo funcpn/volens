@@ -126,7 +126,7 @@
 先把文件夹拿到手：
 
 1. 打开本仓库的 **Releases** 页面，在最新一个版本里下载 **Source code (zip)**；如果那个版本另外附了打包好的 zip，就下那一个
-2. 解压。解出来的文件夹名带后缀（比如 `volens-0.2.0`、`volens-main`），**把它改名为 `volens`**
+2. 解压。解出来的文件夹名带后缀（比如 `volens-0.2.1`、`volens-main`），**把它改名为 `volens`**
 
 **Claude Code** —— 整个文件夹移到你的 skills 目录下：
 

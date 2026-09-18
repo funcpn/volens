@@ -126,7 +126,7 @@ If `git` can't reach GitHub, both Claude Code and Codex can install from a downl
 Get the folder first:
 
 1. Open this repository's **Releases** page and, under the newest version, download **Source code (zip)** — or the packaged zip, if that version attaches one
-2. Unpack it. The folder name carries a suffix (`volens-0.2.0`, `volens-main`, …) — **rename it to `volens`**
+2. Unpack it. The folder name carries a suffix (`volens-0.2.1`, `volens-main`, …) — **rename it to `volens`**
 
 **Claude Code** — move the whole folder into your skills directory:
 
