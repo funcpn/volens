@@ -14,7 +14,7 @@ volens is a plugin built to solve exactly that:
 
 - It **derives the design doc from that log** (`docs/DESIGN.md`) and can update it automatically, keeping the design doc in step with decisions and permanently fresh, without us having to care.
 
-- Whether you're landing a new idea or iterating on an existing project, volens can help. On Claude Code, send `/volens:volens` in the input box; on Codex, have the agent use volens's skill once. volens then puts `docs/DECISION-LOG.md` in place in your project and keeps the design snapshot following your decisions.
+- Whether you're landing a new idea or iterating on an existing project, volens can help. On Claude Code, send `/volens:volens` in the input box; on Codex, send `$volens:volens`. volens then puts `docs/DECISION-LOG.md` in place in your project and keeps the design snapshot following your decisions.
 
 volens keeps the design doc in step with your thinking. Let your agent implement code from the design doc, and the project comes out the way you want it.
 
