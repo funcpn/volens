@@ -64,12 +64,15 @@ When there is nothing to sync it prints nothing. **Silence means nothing was inj
 
 ---
 
-## Install and first run
+## Install
 
 Prerequisites:
 
 - `git` is on your PATH
 - `git` can reach GitHub
+- a bash to run the hook with
+
+> macOS and Linux ship one; on Windows, install Git for Windows — and if you have WSL, the `bash.exe` it puts in `Windows\System32` does not count: it is a launcher into a Linux distro and cannot run the hook.
 
 ### Install in Claude Code
 
@@ -104,6 +107,17 @@ volens installs into Codex as a plugin too, through Codex's own marketplace mech
    ```
 
 3. Confirm it installed: run `codex plugin list` and look for `volens` with status `installed, enabled`.
+
+The marketplace and the plugin share the name `volens`, which is why the install line reads `volens@volens` — marketplace first, plugin second.
+
+### Install in the ChatGPT desktop app (Codex)
+
+The same plugin, the same mechanism: in the app's plugin screen, add the marketplace `https://github.com/funcpn/volens` (leave **Git ref** empty) and install `volens`. From there the usage is identical to Codex — `volens:volens` shows up in the slash menu.
+
+Only two things differ, and both are worth knowing before you rely on them:
+
+- **Installing does not authorize the hook, and nothing asks.** An untrusted hook is skipped in silence — no dialog, no badge, no injection — so the plugin looks healthy while `docs/DESIGN.md` quietly stops updating. To authorize it, open volens's plugin detail (manage) page and choose **Trust all** under *"1 hook needs review before it can run"*. That page shows the command string it is asking about — which file will run — not the script's contents, and the trust is bound to that string: a later plugin update that leaves the command alone does not ask again.
+- **The sync notice arrives as a tooltip, not as a line in the conversation.** Hover the hook icon in the session to see it; the terminal CLI prints the same notice inline (`↳ Hook · 📝 DECISION-LOG …`).
 
 ### Alternative: install from a ZIP
 

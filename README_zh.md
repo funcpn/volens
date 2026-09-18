@@ -64,12 +64,15 @@
 
 ---
 
-## 安装与首次运行
+## 安装
 
 前置条件：
 
 - `git` 在 PATH 上
 - `git` 能访问 GitHub
+- 一个能跑脚本的 bash
+
+> macOS / Linux 自带；Windows 上推荐安装 Git for Windows —— 装了 WSL 的话，`Windows\System32` 里那个 `bash.exe` 不算：它是 WSL 的启动器，跑不了这个 hook。
 
 ### 在 Claude Code 里安装
 
@@ -104,6 +107,17 @@
    ```
 
 3. 确认安装状态：执行 `codex plugin list`，能看到 `volens`，状态是 `installed, enabled`，就说明装好了。
+
+市场和插件同名（都叫 `volens`），所以安装那行写成 `volens@volens`——前面是市场，后面是插件。
+
+### 在 ChatGPT 桌面端（Codex）里安装
+
+桌面端用的是同一个插件、同一套机制：在插件界面里添加市场 `https://github.com/funcpn/volens`（**Git ref** 留空），再安装 `volens` 即可。装好之后的用法与 Codex 完全一样——斜杠菜单里会出现 `volens:volens`。
+
+只有两处不一样，都值得在依赖它之前知道：
+
+- **安装不等于授权 hook，而且没有任何提示。** 未授权的 hook 会被静默跳过——没有弹窗、没有角标、没有注入——插件看起来一切正常，`docs/DESIGN.md` 却悄悄停止更新。要授权，打开「如意」的插件详情（manage）页，在 *"1 hook needs review before it can run"* 下面点 **Trust all**。那一页展示的是它要运行的命令字符串（哪个文件会被执行），不是脚本内容；信任绑在这条字符串上，所以之后插件更新只要不改命令就不会再问一次。
+- **同步通知是悬停提示，不是对话里的一行。** 把鼠标停在会话里的钩子图标上才看得到（终端 CLI 会直接内联打印同一行：`↳ Hook · 📝 DECISION-LOG …`）。
 
 ### 备选安装方法：下载压缩包
 
