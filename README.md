@@ -2,7 +2,7 @@
 
 > English | [中文](README_zh.md)
 
-**volens** is a plugin for coding agents — Claude Code and Codex today. It maintains a structure that keeps a project's documentation in step with its decisions and permanently fresh — the design doc follows every decision you make, and you never have to think about it. And you only need to set it up once in a project: the spell stays cast, with no need to cast it again each time you change your mind.
+**volens** is a plugin for coding agents — Claude Code and Codex (the ChatGPT desktop app included). It maintains a structure that keeps a project's documentation in step with its decisions and permanently fresh — the design doc follows every decision you make, and you never have to think about it. And you only need to set it up once in a project: the spell stays cast, with no need to cast it again each time you change your mind.
 
 ## Why you need volens
 
