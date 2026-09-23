@@ -1,0 +1,52 @@
+{
+  "name": "volens-dsh",
+  "version": "0.3.0",
+  "description": "Keeps a project's documentation in step with its decisions on DeepSeek Harness: the same append-only decision log and derived design snapshot, kept fresh in-process instead of by a hook process.",
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "documentation",
+    "decision-log",
+    "design-doc",
+    "adr"
+  ],
+  "license": "MIT",
+  "author": {
+    "name": "Chao Fan",
+    "email": "142787769+funcpn@users.noreply.github.com"
+  },
+  "homepage": "https://github.com/funcpn/volens",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/funcpn/volens.git",
+    "directory": "dsh"
+  },
+  "bugs": {
+    "url": "https://github.com/funcpn/volens/issues"
+  },
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "index.js",
+    "cordis.patch.yml"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "*",
+    "@deepseek-ai/dsh-agent": "*",
+    "@deepseek-ai/dsh-llm": "*"
+  }
+}

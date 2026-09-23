@@ -1,0 +1,6 @@
+# The DSH bundle patch for volens: one row, inserted over the empty profile root.
+# The user's own cordis.patch.yml and any --patch overlay still apply after this.
+
+- insert:
+    - id: volens
+      name: 'volens-dsh'
