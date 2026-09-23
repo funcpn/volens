@@ -2,7 +2,15 @@
 
 > English | [中文](README_zh.md)
 
-**volens** is a plugin for coding agents — Claude Code and Codex (the ChatGPT desktop app included). It maintains a structure that keeps a project's documentation in step with its decisions and permanently fresh — the design doc follows every decision you make, and you never have to think about it. And you only need to set it up once in a project: the spell stays cast, with no need to cast it again each time you change your mind.
+**volens** is a plugin for coding agents. It maintains a structure that keeps a project's documentation in step with its decisions and permanently fresh — the design doc follows every decision you make, and you never have to think about it. And you only need to set it up once in a project: the spell stays cast, with no need to cast it again each time you change your mind.
+
+Works with:
+
+- Claude Code
+- Codex CLI, the ChatGPT desktop app
+- DeepSeek Harness (DSH)
+
+> More agent support is planned.
 
 ## Why you need volens
 
@@ -10,11 +18,11 @@ Thanks to how quickly models improve and how mature agent products have become, 
 
 volens is a plugin built to solve exactly that:
 
-- It maintains an **append-only decision log** (`docs/DECISION-LOG.md`), recording every decision we make so that each one is traceable.
+- It maintains an **append-only decision log** (`docs/DECISION-LOG.md`), recording every decision we make so that each one is traceable;
 
-- It **derives the design doc from that log** (`docs/DESIGN.md`) and can update it automatically, keeping the design doc in step with decisions and permanently fresh, without us having to care.
+- It **derives the design doc from that log** (`docs/DESIGN.md`) and can update it automatically, keeping the design doc in step with decisions and permanently fresh, without us having to care;
 
-- Whether you're landing a new idea or iterating on an existing project, volens can help. On Claude Code, send `/volens:volens` in the input box; on Codex, send `$volens:volens`. volens then puts `docs/DECISION-LOG.md` in place in your project and keeps the design snapshot following your decisions.
+- Whether you're landing a new idea or iterating on an existing project, volens can help — it keeps the design snapshot following your decisions.
 
 volens keeps the design doc in step with your thinking. Let your agent implement code from the design doc, and the project comes out the way you want it.
 
@@ -22,30 +30,30 @@ volens keeps the design doc in step with your thinking. Let your agent implement
 
 ## How it works
 
-Run volens once in a project (Claude Code: `/volens:volens`; Codex: `$volens:volens`). It first surveys what already exists in the project (**it will not overwrite anything**), then puts the following files in place:
+Run volens once in a project (Claude Code: `/volens:volens`; Codex: `$volens:volens`; DSH: `/volens`). It first surveys what already exists in the project (**it will not overwrite anything**), then puts the following files in place:
 
-- **The contract module in the project's instruction file** — `CLAUDE.md` on Claude Code, `AGENTS.md` on Codex. If the file doesn't exist, it creates one containing only the contract module; if it does, it inserts or updates the module between the markers, holding the documentation model + working agreements. Nothing else in the file is touched.
+- **The contract module in the project's instruction file** — `CLAUDE.md` on Claude Code, `AGENTS.md` on Codex and DSH (DSH loads both files and deduplicates them only when their content is identical). If the file doesn't exist, it creates one containing only the contract module; if it does, it inserts or updates the module between the markers, holding the documentation model + working agreements. Nothing else in the file is touched.
 - **`docs/DECISION-LOG.md`** — an append-only **decision log**, seeded with one entry recording the adoption of this structure. Every later design decision is appended here; history only grows, never changes.
-- **`docs/DESIGN.md`** — a **design snapshot** derived from the log. An existing project gets one at scaffold time; a brand-new project skips it, and the hook generates it from the decision log on the first sync.
-- **`.volens/lang`** — the "project-level decision" of which language this project's docs are recorded in, written as a language tag (`zh`, `en`, `pt-BR`), asked once and committed. A value that is not a tag is ignored: the hook falls back to your preference and says so in the next sync notice. (Earlier versions wrote it to `.claude/volens.lang`; an older project's file still works, and volens moves it to the new location on the next refresh.)
-- **`docs/.volens-cursor`** — the hook's cursor: it records how far into the log the design doc has been reflected. Pure runtime state; written to `.gitignore`, never committed.
+- **`docs/DESIGN.md`** — a **design snapshot** derived from the log. An existing project gets one at scaffold time; a brand-new project skips it, and the sync mechanism generates it from the decision log on the first sync.
+- **`.volens/lang`** — the "project-level decision" of which language this project's docs are recorded in, written as a language tag (`zh`, `en`, `pt-BR`), asked once and committed. A value that is not a tag is ignored: the sync mechanism falls back to your preference and says so in the next sync notice. (Earlier versions wrote it to `.claude/volens.lang`; an older project's file still works, and volens moves it to the new location on the next refresh.)
+- **`docs/.volens-cursor`** — the sync mechanism's cursor: it records how far into the log the design doc has been reflected. Pure runtime state; written to `.gitignore`, never committed.
 
-The sync script itself ships with the plugin and is **never written into your project** — the files above are the only ones volens adds there.
+The sync mechanism itself ships with the plugin and is **never written into your project** — the files above are the only ones volens adds there.
 
 With those in place, day-to-day freshness runs on an **append → notice → incremental sync** loop:
 
 1. **The decision lands** — each time you make a design decision, append an entry to `docs/DECISION-LOG.md` (Context → Decision → Consequences). Append only; never rewrite history.
-2. **The hook notices** — the sync script runs automatically at every session moment (Claude Code: `Stop` (a reply ends) and `SessionStart` (a session begins); Codex: `UserPromptSubmit`, on every message you send), comparing the log's line count against the `docs/.volens-cursor` cursor.
+2. **The sync notices** — it runs automatically at every session moment (Claude Code: `Stop` (a reply ends) and `SessionStart` (a session begins); Codex: `UserPromptSubmit`, on every message you send; DSH: at the head of every turn, from the in-process plugin), comparing the log's line count against the `docs/.volens-cursor` cursor.
 3. **The delta is injected** — if the log has lines beyond the cursor, exactly those lines are handed to the agent as additional context to sync from; if the design doc is already current, the cursor is silently fast-forwarded.
 4. **Only the affected parts are regenerated** — the agent updates only the affected sections of the design doc, the "Design decisions in force" list, and the "Last regenerated" header. It doesn't re-read the whole log or rewrite the whole document. If the log was rewritten or rolled back (line count drops), the cursor is reset and a full rebuild of `docs/DESIGN.md` is requested.
 
-So `docs/DESIGN.md` is always a snapshot of the design "as of now" — derived from the log, kept fresh by the hook. You make the decisions; volens handles the rest.
+So `docs/DESIGN.md` is always a snapshot of the design "as of now" — derived from the log, kept fresh automatically. You make the decisions; volens handles the rest.
 
 ---
 
-## What the hook does — and doesn't
+## What the sync mechanism does — and doesn't
 
-The sync script ships inside the plugin. On Claude Code it is registered by `hooks/hooks.json` and runs on `Stop` (a reply ends) and `SessionStart` (a session starts, is cleared, or is compacted); on Codex it is registered by `hooks/hooks-codex.json` and runs on `UserPromptSubmit` only — every message you send. It is one shell script either way.
+The sync mechanism ships inside the plugin. On Claude Code it is registered by `hooks/hooks.json` and runs on `Stop` (a reply ends) and `SessionStart` (a session starts, is cleared, or is compacted); on Codex it is registered by `hooks/hooks-codex.json` and runs on `UserPromptSubmit` only — every message you send. Those two share one shell script. DSH does not go through a hook at all: the same logic runs as JavaScript inside its own process (`dsh/index.js`), triggered at the head of every turn.
 
 **What it reads** — the *line count* of `docs/DECISION-LOG.md`, the number stored in `docs/.volens-cursor`, the *modification time* of `docs/DESIGN.md`, and your language preference (`~/.config/volens/lang` — or under `XDG_CONFIG_HOME` when that is set — or the project's `.volens/lang`).
 
@@ -57,8 +65,9 @@ That is the whole list. It never reads the contents of your log, your design doc
 
 - **No network.** No HTTP, no sockets, no telemetry, no analytics. Nothing leaves your machine.
 - **No writes outside `docs/`.** It never touches your source or your instruction file, and it only ever reads `.volens/lang`.
-- **No execution of anything from your project.** The script is fixed and ships with the plugin.
-- **No blocking.** It always exits 0, so it can only ever add context to the conversation — it cannot stop a turn or refuse a tool call.
+- **No execution of anything from your project.** The logic is fixed and ships with the plugin: on Claude Code and Codex it is a shell script, on DSH it is plugin code running inside the agent's own process.
+- **No blocking.** On Claude Code and Codex it always exits 0; on DSH it returns no decision. Either way it can only ever add context to the conversation — it cannot stop a turn or refuse a tool call.
+- **No injection into subagent sessions (DSH).** A subagent inherits its parent's working directory and could not act on the delta, so DSH skips it.
 
 When there is nothing to sync it prints nothing. **Silence means nothing was injected — not that something failed.**
 
@@ -73,6 +82,8 @@ Prerequisites:
 - a bash to run the hook with
 
 > macOS and Linux ship one; on Windows, install Git for Windows — and if you have WSL, the `bash.exe` it puts in `Windows\System32` does not count: it is a launcher into a Linux distro and cannot run the hook.
+>
+> **DSH is the exception**: it needs no bash (the sync logic runs in-process), but the skill half comes from this repository, so you still need `git` (or the ZIP below) to get it.
 
 ### Install in Claude Code
 
@@ -129,15 +140,15 @@ DSH does not read a plugin manifest the way the other two do. It loads **cordis 
    dsh plugin --profile web add volens-dsh
    ```
 
-   This is `pnpm add` run inside `~/.dsh/profiles/web`. The package declares a bundle, so installing it makes its layer available to that profile.
+   This is `pnpm add` run inside `~/.dsh/profiles/web`; `web` is the shipped web template, so swap in your own profile name if it differs. The package declares a bundle, so installing it makes its layer available to that profile.
 
-2. Make the skill discoverable, by linking the one that came with this repository into a directory DSH scans:
+2. Make the skill discoverable — DSH discovers skills from filesystem directories and a plugin manifest cannot declare one, so the skill has to be placed separately. Get this repository first (`git clone`, or the ZIP under *Alternative* below), then link it into a directory DSH scans:
 
    ```
    ln -s /path/to/volens/skills/volens ~/.agents/skills/volens
    ```
 
-   DSH scans `~/.agents/skills`, `~/.dsh/skills`, and the project-local `.agents/skills` and `.dsh/skills`. A symlink is fine — DSH follows it — so the skill stays in one place. Type `/` in the input box and `volens` should be in the menu.
+   `/path/to/volens` is that copy of the repository. DSH scans `~/.agents/skills`, `~/.dsh/skills`, and the project-local `.agents/skills` and `.dsh/skills`. A symlink is fine — DSH follows it — so the skill stays in one place. Type `/` in the input box and `volens` should be in the menu.
 
 3. Restart DSH: the profile's patch and the plugin module are read at process start.
 
@@ -148,12 +159,12 @@ Two things worth knowing before you rely on it:
 
 ### Alternative: install from a ZIP
 
-If `git` can't reach GitHub, both Claude Code and Codex can install from a download instead. Downloading and unpacking are the same either way; putting the folder in place is where they diverge.
+If `git` can't reach GitHub, Claude Code, Codex, and DSH's skill half can install from a download instead. Downloading and unpacking are the same either way; putting the folder in place is where they diverge.
 
 Get the folder first:
 
 1. Open this repository's **Releases** page and, under the newest version, download **Source code (zip)** — or the packaged zip, if that version attaches one
-2. Unpack it. The folder name carries a suffix (`volens-0.2.1`, `volens-main`, …) — **rename it to `volens`**
+2. Unpack it. The folder name carries a suffix (`volens-0.3.0`, `volens-main`, …) — **rename it to `volens`**
 
 **Claude Code** — move the whole folder into your skills directory:
 
@@ -170,6 +181,8 @@ codex plugin add volens@volens
 ```
 
 Run `codex plugin list` and confirm the status is `installed, enabled`. Your first session will likewise show `Hooks need review` — choose **Trust all and continue**.
+
+**DSH** — the download gives you the **skill half**: unpack it and point the link at `skills/volens` inside the unpacked folder (the plugin half still comes from npm, as in the DSH install steps above).
 
 ---
 
@@ -188,9 +201,18 @@ On Codex:
 ```
 $volens:volens
 ```
+
+On DSH:
+
+```
+/volens
+```
+
 >**Codex asks you to trust the hooks once, on the first run.** Your first Codex session will show `Hooks need review` — choose **Trust all and continue**. Without it the plugin is installed, but the design snapshot never updates.
 
-It surveys what already exists (**it will not overwrite anything**), sets the documentation language (once), ensures the contract module is in place, seeds `docs/DECISION-LOG.md`, and confirms the sync hook is live. From then on, whenever a design decision changes, append an entry to the log; the hook handles the rest.
+>**DSH has no namespace and no hook to trust.** The skill is the bare `/volens` in the menu; the plugin loads with its profile, so a process restart is all it takes.
+
+It surveys what already exists (**it will not overwrite anything**), sets the documentation language (once), ensures the contract module is in place, seeds `docs/DECISION-LOG.md`, and confirms the sync mechanism is live (a hook on Claude Code and Codex, the in-process plugin on DSH). From then on, whenever a design decision changes, append an entry to the log; the sync mechanism handles the rest.
 
 ---
 
