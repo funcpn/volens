@@ -121,7 +121,23 @@ json_escape() {
 
 emit() {
   # $1: "sync" -> delta inject, "reset" -> full rebuild
-  local CONTEXT="The decision log docs/DECISION-LOG.md is at line ${M}, but docs/DESIGN.md only reflects it through line ${N}. The new content is exactly lines $((N+1))..${M} (previous line count ${N}, current line count ${M}). Read only those lines. Update docs/DESIGN.md from them, and end this turn with a write to docs/DESIGN.md: apply the delta to the affected sections and the Design-decisions-in-force list, and always refresh the header line 'Last regenerated' to today. Even when no section changes are needed, still update that header — never skip the write, because the sync cursor advances only on DESIGN.md's mtime, and a no-write continuation re-injects this same delta and loops. If the write cannot land at all — permission denied, a read-only filesystem — stop after the first failure and tell the user plainly which file was refused and why: a silent failure leaves the design doc stale with nothing to explain it. Do not read the whole log. Write the affected sections in ${LANG_DOC} (this project's content language — .volens/lang, else ~/.config/volens/lang)."
+  # $2: on a rebuild, the pre-reset cursor — the position DESIGN.md had reached
+  #     before the log was rewritten, which is what the message reports as stale.
+  # The two branches want opposite instructions about the log, so they are spelled
+  # out rather than shared: a delta must read only its slice, while a rebuild is
+  # there precisely because the log was rewritten and the slice is lines 1..M — a
+  # "Do not read the whole log" clause is true of the first and false of the second,
+  # and after a rewrite leaving it in would tempt a partial rebuild of a long log.
+  local OPEN SCOPE STALE_REF
+  if [ "$1" = "reset" ]; then
+    STALE_REF="${2:-$N}"
+    OPEN="The decision log docs/DECISION-LOG.md was rewritten and is now at line ${M}; docs/DESIGN.md is a stale snapshot of an earlier design (it reflected ${STALE_REF} lines, which no longer exist). Rebuild it from the whole log: read lines 1..${M} in full."
+    SCOPE="Read the whole log before writing."
+  else
+    OPEN="The decision log docs/DECISION-LOG.md is at line ${M}, but docs/DESIGN.md only reflects it through line ${N}. The new content is exactly lines $((N+1))..${M} (previous line count ${N}, current line count ${M}). Read only those lines."
+    SCOPE="Do not read the whole log."
+  fi
+  local CONTEXT="${OPEN} Update docs/DESIGN.md from it, and end this turn with a write to docs/DESIGN.md: apply the change to the affected sections and the Design-decisions-in-force list, and always refresh the header line 'Last regenerated' to today. Even when no section changes are needed, still update that header — never skip the write, because the sync cursor advances only on DESIGN.md's mtime, and a no-write continuation re-injects this same delta and loops. If the write cannot land at all — permission denied, a read-only filesystem — stop after the first failure and tell the user plainly which file was refused and why: a silent failure leaves the design doc stale with nothing to explain it. ${SCOPE} Write the affected sections in ${LANG_DOC} (this project's content language — .volens/lang, else ~/.config/volens/lang)."
 
   # The user-facing notice follows the injection: if we inject, we say so; if the
   # user sees nothing, nothing was injected. systemMessage is a TOP-LEVEL field —
@@ -165,9 +181,12 @@ emit() {
 }
 
 if [ "$M" -lt "$N" ]; then
-  # Log was rewritten/rolled back: reset cursor first (emit embeds N), then rebuild.
+  # Log was rewritten/rolled back: reset the cursor, then rebuild from zero. STALE
+  # keeps the pre-reset count, which is what the message reports as the snapshot's
+  # out-of-date position; N becomes the rebuild's starting point.
+  STALE="$N"
   echo 0 > "$CURSOR"; N=0
-  emit reset
+  emit reset "$STALE"
 elif [ -f "$DESIGN" ] && [ ! "$LOG" -nt "$DESIGN" ]; then
   # DESIGN already covers the log: fast-forward cursor, silent.
   echo "$M" > "$CURSOR"
