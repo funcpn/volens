@@ -119,6 +119,33 @@ Only two things differ, and both are worth knowing before you rely on them:
 - **Installing does not authorize the hook, and nothing asks.** An untrusted hook is skipped in silence — no dialog, no badge, no injection — so the plugin looks healthy while `docs/DESIGN.md` quietly stops updating. To authorize it, open volens's plugin detail (manage) page and choose **Trust all** under *"1 hook needs review before it can run"*. That page shows the command string it is asking about — which file will run — not the script's contents, and the trust is bound to that string: a later plugin update that leaves the command alone does not ask again.
 - **The sync notice arrives as a tooltip, not as a line in the conversation.** Hover the hook icon in the session to see it; the terminal CLI prints the same notice inline (`↳ Hook · 📝 DECISION-LOG …`).
 
+### Install in DSH
+
+DSH does not read a plugin manifest the way the other two do. It loads **cordis bundles** — npm packages that ship a configuration layer — into its own process, and it discovers skills from filesystem directories rather than from a plugin's manifest. So on DSH volens installs in **two steps**, one for each half.
+
+1. Install the plugin into a profile:
+
+   ```
+   dsh plugin --profile web add volens-dsh
+   ```
+
+   This is `pnpm add` run inside `~/.dsh/profiles/web`. The package declares a bundle, so installing it makes its layer available to that profile.
+
+2. Make the skill discoverable, by linking the one that came with this repository into a directory DSH scans:
+
+   ```
+   ln -s /path/to/volens/skills/volens ~/.agents/skills/volens
+   ```
+
+   DSH scans `~/.agents/skills`, `~/.dsh/skills`, and the project-local `.agents/skills` and `.dsh/skills`. A symlink is fine — DSH follows it — so the skill stays in one place. Type `/` in the input box and `volens` should be in the menu.
+
+3. Restart DSH: the profile's patch and the plugin module are read at process start.
+
+Two things worth knowing before you rely on it:
+
+- **Reinstalling is how a plugin update arrives.** `dsh plugin add` copies the package into the profile rather than linking to it, so a change to the package does not reach the profile until you run the `add` again. The skill is a symlink and needs nothing.
+- **The sync notice arrives as a collapsed context row, not as a line of its own.** Look for a small context icon with `volens` and the notice text beside it — it sits where tool-call rows sit, and is easy to scroll past. The synchronization does not depend on seeing it.
+
 ### Alternative: install from a ZIP
 
 If `git` can't reach GitHub, both Claude Code and Codex can install from a download instead. Downloading and unpacking are the same either way; putting the folder in place is where they diverge.

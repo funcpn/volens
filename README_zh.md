@@ -119,6 +119,33 @@
 - **安装不等于授权 hook，而且没有任何提示。** 未授权的 hook 会被静默跳过——没有弹窗、没有角标、没有注入——插件看起来一切正常，`docs/DESIGN.md` 却悄悄停止更新。要授权，打开「如意」的插件详情（manage）页，在 *"1 hook needs review before it can run"* 下面点 **Trust all**。那一页展示的是它要运行的命令字符串（哪个文件会被执行），不是脚本内容；信任绑在这条字符串上，所以之后插件更新只要不改命令就不会再问一次。
 - **同步通知是悬停提示，不是对话里的一行。** 把鼠标停在会话里的钩子图标上才看得到（终端 CLI 会直接内联打印同一行：`↳ Hook · 📝 DECISION-LOG …`）。
 
+### 在 DSH 里安装
+
+DSH 不像另外两家那样读插件清单。它把 **cordis bundle**——带配置层的 npm 包——加载进自己的进程，而技能是从**文件系统目录**里发现的，不是由插件清单声明的。所以在 DSH 上「如意」要装**两步**，一步一半。
+
+1. 把插件装进某个 profile：
+
+   ```
+   dsh plugin --profile web add volens-dsh
+   ```
+
+   这条命令就是在那份 profile 目录（`~/.dsh/profiles/web`）里执行 `pnpm add`。包本身声明了 bundle，所以装完它的配置层就对这份 profile 生效。
+
+2. 让技能可被发现——把本仓库自带的那个链接进 DSH 会扫描的目录：
+
+   ```
+   ln -s /path/to/volens/skills/volens ~/.agents/skills/volens
+   ```
+
+   DSH 会扫描 `~/.agents/skills`、`~/.dsh/skills`，以及项目内的 `.agents/skills` 和 `.dsh/skills`。符号链接即可（DSH 会跟随），所以技能只留一份。在输入框里敲 `/`，菜单里应当能看到 `volens`。
+
+3. 重启 DSH：profile 的 patch 与插件模块都是启动时读取的。
+
+依赖它之前，有两件事值得先知道：
+
+- **插件更新靠重装。** `dsh plugin add` 是把包**复制**进 profile，不是链接过去；所以改了包之后，要再跑一次 `add` 才会生效。技能是符号链接，不需要任何操作。
+- **同步通知是一条折叠的上下文行，不是独立的一行提示。** 找一个小上下文图标，旁边写着 `volens` 和通知文字——它和工具调用行排在一起，很容易划过。同步本身不依赖你是否看见它。
+
 ### 备选安装方法：下载压缩包
 
 如果 `git` 不能访问 GitHub，Claude Code 和 Codex 下都可以改用下载。下载和解压是通用的，装进哪个 Agent 里则各走各的路。
