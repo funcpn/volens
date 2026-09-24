@@ -1,6 +1,6 @@
 {
   "name": "volens-dsh",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Keeps a project's documentation in step with its decisions on DeepSeek Harness: the same append-only decision log and derived design snapshot, kept fresh in-process instead of by a hook process.",
   "keywords": [
     "deepseek-harness",
