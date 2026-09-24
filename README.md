@@ -146,7 +146,7 @@ DSH does not read a plugin manifest the way the other two do. It loads **cordis 
 
 Two things worth knowing before you rely on it:
 
-- **Reinstalling is how a plugin update arrives.** `dsh plugin add` copies the package into the profile rather than linking to it, so a change to the package does not reach the profile until you run the `add` again. The skill comes from the same package, so it updates with it.
+- **Updating means naming the version.** The command runs `pnpm add` inside the profile, and pnpm leaves an installed package alone while the recorded range is satisfied — `add volens-dsh` on an installed copy reports "Lockfile is up to date" and changes nothing. Name the version instead (`add volens-dsh@0.4.0`); if that release is newer than the profile's supply-chain policy allows, the CLI says so and adds it to `minimumReleaseAgeExclude` in the profile's `pnpm-workspace.yaml` before installing. The skill ships in the same package, so it arrives with it.
 - **The sync notice arrives as a collapsed context row, not as a line of its own.** Look for a small context icon with `volens` and the notice text beside it — it sits where tool-call rows sit, and is easy to scroll past. The synchronization does not depend on seeing it.
 
 ### Alternative: install from a ZIP
