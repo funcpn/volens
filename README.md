@@ -53,7 +53,7 @@ So `docs/DESIGN.md` is always a snapshot of the design "as of now" — derived f
 
 ## What the sync mechanism does — and doesn't
 
-The sync mechanism ships inside the plugin. On Claude Code it is registered by `hooks/hooks.json` and runs on `Stop` (a reply ends) and `SessionStart` (a session starts, is cleared, or is compacted); on Codex it is registered by `hooks/hooks-codex.json` and runs on `UserPromptSubmit` only — every message you send. Those two share one shell script. DSH does not go through a hook at all: the same logic runs as JavaScript inside its own process (`dsh/index.js`), triggered at the head of every turn.
+The sync mechanism ships inside the plugin. On Claude Code it is registered by `hooks/hooks.json` and runs on `Stop` (a reply ends) and `SessionStart` (a session starts, is cleared, or is compacted); on Codex it is registered by `hooks/hooks-codex.json` and runs on `UserPromptSubmit` only — every message you send. Those two share one shell script. DSH does not go through a hook at all: the same logic runs as JavaScript inside its own process (`index.js`), triggered at the head of every turn.
 
 **What it reads** — the *line count* of `docs/DECISION-LOG.md`, the number stored in `docs/.volens-cursor`, the *modification time* of `docs/DESIGN.md`, and your language preference (`~/.config/volens/lang` — or under `XDG_CONFIG_HOME` when that is set — or the project's `.volens/lang`).
 
@@ -83,7 +83,7 @@ Prerequisites:
 
 > macOS and Linux ship one; on Windows, install Git for Windows — and if you have WSL, the `bash.exe` it puts in `Windows\System32` does not count: it is a launcher into a Linux distro and cannot run the hook.
 >
-> **DSH is the exception**: it needs no bash (the sync logic runs in-process), but the skill half comes from this repository, so you still need `git` (or the ZIP below) to get it.
+> **DSH is the exception** on both counts: its half runs in-process, and its skill ships inside the same npm package, so it needs neither a bash nor a checkout of this repository.
 
 ### Install in Claude Code
 
@@ -132,34 +132,26 @@ Only two things differ, and both are worth knowing before you rely on them:
 
 ### Install in DSH
 
-DSH does not read a plugin manifest the way the other two do. It loads **cordis bundles** — npm packages that ship a configuration layer — into its own process, and it discovers skills from filesystem directories rather than from a plugin's manifest. So on DSH volens installs in **two steps**, one for each half.
+DSH does not read a plugin manifest the way the other two do. It loads **cordis bundles** — npm packages that ship a configuration layer — into its own process, and it discovers skills from registered providers rather than from a plugin's manifest. `volens-dsh` is both at once: the sync plugin and the skill travel in the same package, so there is nothing to place by hand.
 
-1. Install the plugin into a profile:
+1. Install it into a profile:
 
    ```
    dsh plugin --profile web add volens-dsh
    ```
 
-   This is `pnpm add` run inside `~/.dsh/profiles/web`; `web` is the shipped web template, so swap in your own profile name if it differs. The package declares a bundle, so installing it makes its layer available to that profile.
+   This is `pnpm add` run inside `~/.dsh/profiles/web`; `web` is the shipped web template, so swap in your own profile name if it differs. The package declares a bundle, so installing it makes its layer available to that profile — and it registers its skill, which is why `/volens` is in the menu once DSH has restarted.
 
-2. Make the skill discoverable — DSH discovers skills from filesystem directories and a plugin manifest cannot declare one, so the skill has to be placed separately. Get this repository first (`git clone`, or the ZIP under *Alternative* below), then link it into a directory DSH scans:
-
-   ```
-   ln -s /path/to/volens/skills/volens ~/.agents/skills/volens
-   ```
-
-   `/path/to/volens` is that copy of the repository. DSH scans `~/.agents/skills`, `~/.dsh/skills`, and the project-local `.agents/skills` and `.dsh/skills`. A symlink is fine — DSH follows it — so the skill stays in one place. Type `/` in the input box and `volens` should be in the menu.
-
-3. Restart DSH: the profile's patch and the plugin module are read at process start.
+2. Restart DSH: the profile's patch and the plugin module are read at process start.
 
 Two things worth knowing before you rely on it:
 
-- **Reinstalling is how a plugin update arrives.** `dsh plugin add` copies the package into the profile rather than linking to it, so a change to the package does not reach the profile until you run the `add` again. The skill is a symlink and needs nothing.
+- **Reinstalling is how a plugin update arrives.** `dsh plugin add` copies the package into the profile rather than linking to it, so a change to the package does not reach the profile until you run the `add` again. The skill comes from the same package, so it updates with it.
 - **The sync notice arrives as a collapsed context row, not as a line of its own.** Look for a small context icon with `volens` and the notice text beside it — it sits where tool-call rows sit, and is easy to scroll past. The synchronization does not depend on seeing it.
 
 ### Alternative: install from a ZIP
 
-If `git` can't reach GitHub, Claude Code, Codex, and DSH's skill half can install from a download instead. Downloading and unpacking are the same either way; putting the folder in place is where they diverge.
+If `git` can't reach GitHub, Claude Code and Codex can install from a download instead. Downloading and unpacking are the same either way; putting the folder in place is where they diverge. (DSH does not need this: its package comes from npm, with the skill inside it.)
 
 Get the folder first:
 
@@ -181,8 +173,6 @@ codex plugin add volens@volens
 ```
 
 Run `codex plugin list` and confirm the status is `installed, enabled`. Your first session will likewise show `Hooks need review` — choose **Trust all and continue**.
-
-**DSH** — the download gives you the **skill half**: unpack it and point the link at `skills/volens` inside the unpacked folder (the plugin half still comes from npm, as in the DSH install steps above).
 
 ---
 

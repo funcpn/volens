@@ -1,1 +1,3 @@
 .DS_Store
+# an install run at the package root; the manifests themselves are committed
+node_modules/

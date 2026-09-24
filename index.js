@@ -39,12 +39,22 @@
  * working the same project. That is the only reason no lock is needed for the
  * cursor; introducing an `await` between the read and the write would break it.
  *
+ * The module has a second, thinner responsibility: it hands the skill that ships
+ * in `skills/volens/` to `ctx.skills`. DSH discovers skills from providers rather
+ * than from a package manifest, and a bundle patch can insert plugin rows and
+ * nothing else, so a package that ships a skill has to register it itself — the
+ * same wiring `dsh-fact-check` describes in its own patch. Both halves live in one
+ * module because they arrive together: the skill sets the structure up, the
+ * listener keeps it fresh.
+ *
  * @module volens-dsh
  */
 
 import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import { readFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 
 /** Cordis plugin name, used by loader diagnostics and as the message source. */
@@ -186,12 +196,124 @@ function renderMessages(kind, stale, m, docLang, pinIgnored, uiLang) {
   return { notice, context }
 }
 
+/** The skill directory: `SKILL.md` and the `references/` its body links to. */
+const SKILL_DIR = new URL('skills/volens/', import.meta.url)
+const SKILL_FILE = new URL('SKILL.md', SKILL_DIR)
+
 /**
- * Mount the sync check.
+ * Bundled rank. Lower ranks win a duplicated skill name, and every local tier sits
+ * below this one (project 100/200, custom 300, user 400/500), so a user's own
+ * `~/.dsh/skills/volens` still overrides the copy that ships in the package.
+ */
+const SKILL_RANK = 600
+
+/**
+ * Read the frontmatter keys this skill uses, with no YAML dependency.
+ *
+ * @param {string} text - the whole `SKILL.md`.
+ * @returns {{ fields: Record<string, string>, body: string }} fields, and the body without them.
+ */
+function parseFrontmatter(text) {
+  // Strip a BOM and normalize CRLF: an editor's encoding and a Windows checkout
+  // should not change the parse.
+  const source = text.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n')
+  if (!source.startsWith('---')) return { fields: {}, body: text }
+  const end = source.indexOf('\n---', 3)
+  if (end === -1) return { fields: {}, body: text }
+  const fields = {}
+  for (const line of source.slice(3, end).split('\n')) {
+    const match = line.match(/^([A-Za-z0-9_-]+):\s*(.*)$/)
+    if (match) fields[match[1]] = match[2].trim().replace(/^["']|["']$/g, '')
+  }
+  return { fields, body: source.slice(end + 4).trimStart() }
+}
+
+/** The registry rejects a name that is not kebab-case. */
+function isSkillName(value) {
+  return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(String(value))
+}
+
+/** Frontmatter invocation switches; omitted means the skill is offered on both surfaces. */
+function invocationOf(fields) {
+  return {
+    modelInvocable: String(fields['disable-model-invocation'] ?? '').toLowerCase() !== 'true',
+    userInvocable: String(fields['user-invocable'] ?? '').toLowerCase() !== 'false',
+  }
+}
+
+/**
+ * List the one skill this package ships, re-read from disk on every call.
+ *
+ * A read that fails is **not** swallowed: letting this reject is more honest than
+ * returning an empty catalog, because the registry records a rejection as an
+ * incomplete observation and keeps the last good catalog, while an empty array
+ * tells the model the skill was deleted.
+ *
+ * @returns {Promise<object[]>} one candidate.
+ */
+async function list() {
+  const { fields } = parseFrontmatter(await readFile(SKILL_FILE, 'utf8'))
+  if (!isSkillName(fields.name)) {
+    throw new Error(`SKILL.md frontmatter name is not kebab-case: ${JSON.stringify(fields.name)}`)
+  }
+  if (!fields.description) throw new Error('SKILL.md frontmatter has no description')
+  return [
+    {
+      name: fields.name,
+      description: fields.description,
+      invocation: invocationOf(fields),
+      provider: name,
+      source: 'bundled',
+      // The body links `references/instruction-file-contract.md` and its sibling
+      // relatively, so the resource base is the skill directory, not the package
+      // root — a fact `dsh-fact-check` records from the other direction, keeping
+      // its own SKILL.md at the root so those relative paths keep resolving.
+      resourceBase: { kind: 'directory', path: fileURLToPath(SKILL_DIR) },
+      rank: SKILL_RANK,
+      locator: SKILL_FILE,
+    },
+  ]
+}
+
+/**
+ * Load the body for a listed candidate, frontmatter stripped.
+ *
+ * @param {{ name: string, description: string, invocation: object, resourceBase: object }} candidate - what `list()` returned.
+ * @returns {Promise<object>} the complete skill definition.
+ */
+async function get(candidate) {
+  const { fields, body } = parseFrontmatter(await readFile(SKILL_FILE, 'utf8'))
+  // A name that changed between the two reads means the file was swapped; throw so
+  // the registry re-discovers instead of handing over a definition that lies.
+  if (fields.name !== candidate.name) {
+    throw new Error(`SKILL.md now declares ${JSON.stringify(fields.name)}, not the listed ${JSON.stringify(candidate.name)}`)
+  }
+  return {
+    name: candidate.name,
+    description: fields.description || candidate.description,
+    invocation: candidate.invocation,
+    provider: name,
+    source: 'bundled',
+    resourceBase: candidate.resourceBase,
+    content: body,
+  }
+}
+
+/** The provider: stateless, and it caches no body. */
+const skillProvider = { name, list, get }
+
+/**
+ * Mount the sync check and the skill provider.
  *
  * @param {import('@deepseek-ai/cordis').Context} ctx - the plugin context.
  */
 export function apply(ctx) {
+  // The skill half is looked up rather than injected: `inject: ['skills']` would
+  // hold the whole plugin back in a deployment whose profile mounts no skill
+  // registry, and the sync listener has to keep working there.
+  const skills = ctx.get('skills')
+  if (skills !== undefined) skills.registerProvider(() => skillProvider)
+
   ctx.on('agent/pre-step', async ({ agent, step, signal }, next) => {
     const decision = await next()
     if (decision.kind === 'reject' || signal.aborted) return decision

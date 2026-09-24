@@ -1,6 +1,6 @@
 {
   "name": "volens-dsh",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Keeps a project's documentation in step with its decisions on DeepSeek Harness: the same append-only decision log and derived design snapshot, kept fresh in-process instead of by a hook process.",
   "keywords": [
     "deepseek-harness",
@@ -19,8 +19,7 @@
   "homepage": "https://github.com/funcpn/volens",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/funcpn/volens.git",
-    "directory": "dsh"
+    "url": "git+https://github.com/funcpn/volens.git"
   },
   "bugs": {
     "url": "https://github.com/funcpn/volens/issues"
@@ -33,7 +32,8 @@
   },
   "files": [
     "index.js",
-    "cordis.patch.yml"
+    "cordis.patch.yml",
+    "skills"
   ],
   "publishConfig": {
     "access": "public",

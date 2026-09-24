@@ -53,7 +53,7 @@
 
 ## 同步机制到底做了什么 —— 以及它不做什么
 
-同步机制随插件分发。在 Claude Code 下它由 `hooks/hooks.json` 注册，在 `Stop`（一次回复结束）和 `SessionStart`（会话开始、被清空或被压缩）两个时机运行；在 Codex 下由 `hooks/hooks-codex.json` 注册，只在 `UserPromptSubmit`（你每一次发消息时）运行——这两家共用同一个 shell 脚本。DSH 不走 hook：同一套逻辑以 JavaScript 跑在它自己的进程里（`dsh/index.js`），在每一轮对话的开头触发。
+同步机制随插件分发。在 Claude Code 下它由 `hooks/hooks.json` 注册，在 `Stop`（一次回复结束）和 `SessionStart`（会话开始、被清空或被压缩）两个时机运行；在 Codex 下由 `hooks/hooks-codex.json` 注册，只在 `UserPromptSubmit`（你每一次发消息时）运行——这两家共用同一个 shell 脚本。DSH 不走 hook：同一套逻辑以 JavaScript 跑在它自己的进程里（`index.js`），在每一轮对话的开头触发。
 
 **它读什么** —— `docs/DECISION-LOG.md` 的**行数**、`docs/.volens-cursor` 里存的那个数字、`docs/DESIGN.md` 的**修改时间**，以及你的语言偏好（`~/.config/volens/lang` —— 设置了 `XDG_CONFIG_HOME` 就在它下面 —— 或项目里的 `.volens/lang`）。
 
@@ -83,7 +83,7 @@
 
 > macOS / Linux 自带；Windows 上推荐安装 Git for Windows —— 装了 WSL 的话，`Windows\System32` 里那个 `bash.exe` 不算：它是 WSL 的启动器，跑不了这个 hook。
 >
-> **DSH 是例外**：它不需要 bash（同步逻辑跑在进程里），但技能那一半要从本仓库取得，所以你仍然需要 `git`（或下面的压缩包）来拿到仓库。
+> **DSH 两样都例外**：它的那一半跑在进程里，技能也随同一个 npm 包一起装，所以既不需要 bash，也不需要本仓库的一份检出。
 
 ### 在 Claude Code 里安装
 
@@ -132,34 +132,26 @@
 
 ### 在 DSH 里安装
 
-DSH 不像另外两家那样读插件清单。它把 **cordis bundle**——带配置层的 npm 包——加载进自己的进程，而技能是从**文件系统目录**里发现的，不是由插件清单声明的。所以在 DSH 上「如意」要装**两步**，一步一半。
+DSH 不像另外两家那样读插件清单。它把 **cordis bundle**——带配置层的 npm 包——加载进自己的进程，而技能是从**注册的 provider** 那里发现的，不是由插件清单声明的。`volens-dsh` 两者兼有：同步插件和技能装在同一个包里，没有任何东西需要你手工摆放。
 
-1. 把插件装进某个 profile：
+1. 把它装进某个 profile：
 
    ```
    dsh plugin --profile web add volens-dsh
    ```
 
-   这条命令就是在那份 profile 目录（`~/.dsh/profiles/web`）里执行 `pnpm add`；`web` 是 DSH 自带的 web 端模板，换成你自己的 profile 名即可。包本身声明了 bundle，所以装完它的配置层就对这份 profile 生效。
+   这条命令就是在那份 profile 目录（`~/.dsh/profiles/web`）里执行 `pnpm add`；`web` 是 DSH 自带的 web 端模板，换成你自己的 profile 名即可。包本身声明了 bundle，所以装完它的配置层就对这份 profile 生效——它同时注册了自己的技能，所以 DSH 重启之后 `/volens` 就在菜单里。
 
-2. 让技能可被发现——DSH 从文件系统目录发现技能，插件清单声明不了它，所以技能得单独就位。先把本仓库拿到手（`git clone`，或后面「备选安装方法」里的压缩包），再把它链接进 DSH 会扫描的目录：
-
-   ```
-   ln -s /path/to/volens/skills/volens ~/.agents/skills/volens
-   ```
-
-   其中 `/path/to/volens` 就是你拿到的那份仓库。DSH 会扫描 `~/.agents/skills`、`~/.dsh/skills`，以及项目内的 `.agents/skills` 和 `.dsh/skills`。符号链接即可（DSH 会跟随），所以技能只留一份。在输入框里敲 `/`，菜单里应当能看到 `volens`。
-
-3. 重启 DSH：profile 的 patch 与插件模块都是启动时读取的。
+2. 重启 DSH：profile 的 patch 与插件模块都是启动时读取的。
 
 依赖它之前，有两件事值得先知道：
 
-- **插件更新靠重装。** `dsh plugin add` 是把包**复制**进 profile，不是链接过去；所以改了包之后，要再跑一次 `add` 才会生效。技能是符号链接，不需要任何操作。
+- **插件更新靠重装。** `dsh plugin add` 是把包**复制**进 profile，不是链接过去；所以改了包之后，要再跑一次 `add` 才会生效。技能来自同一个包，因此随它一起更新。
 - **同步通知是一条折叠的上下文行，不是独立的一行提示。** 找一个小上下文图标，旁边写着 `volens` 和通知文字——它和工具调用行排在一起，很容易划过。同步本身不依赖你是否看见它。
 
 ### 备选安装方法：下载压缩包
 
-如果 `git` 不能访问 GitHub，Claude Code、Codex，以及 DSH 的技能那一半，都可以改用下载。下载和解压是通用的，装进哪个 Agent 里则各走各的路。
+如果 `git` 不能访问 GitHub，Claude Code 和 Codex 都可以改用下载。下载和解压是通用的，装进哪个 Agent 里则各走各的路。（DSH 不需要这条：它的包来自 npm，技能就在包里。）
 
 先把文件夹拿到手：
 
@@ -181,8 +173,6 @@ codex plugin add volens@volens
 ```
 
 敲 `codex plugin list` 确认状态是 `installed, enabled`。第一次开会话时同样会看到 `Hooks need review`，选 **Trust all and continue**。
-
-**DSH** —— 压缩包给的是**技能那一半**：解压后把链接指向压缩包里的 `skills/volens`（插件那一半仍然从 npm 装，见上面的 DSH 安装步骤）。
 
 ---
 
