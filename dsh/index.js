@@ -157,7 +157,7 @@ function renderMessages(kind, stale, m, docLang, pinIgnored, uiLang) {
   const notice = uiLang === 'zh'
     ? kind === 'rebuild'
       ? `📝 DECISION-LOG 被改写,光标已重置,将重建 DESIGN.md${note}`
-      : `📝 DECISION-LOG 新增 ${stale}→${m} 行,如意将同步 DESIGN.md${note}`
+      : `📝 DECISION-LOG 新增 ${stale}→${m} 行,「如意」将同步 DESIGN.md${note}`
     : kind === 'rebuild'
       ? `📝 DECISION-LOG was rewritten; cursor reset, DESIGN.md will rebuild${note}`
       : `📝 DECISION-LOG grew (${stale}→${m}); volens will sync DESIGN.md${note}`

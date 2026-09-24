@@ -165,7 +165,7 @@ emit() {
     if [ "$1" = "reset" ]; then
       MSG="📝 DECISION-LOG 被改写,光标已重置,将重建 DESIGN.md${NOTE}"
     else
-      MSG="📝 DECISION-LOG 新增 ${N}→${M} 行,如意将同步 DESIGN.md${NOTE}"
+      MSG="📝 DECISION-LOG 新增 ${N}→${M} 行,「如意」将同步 DESIGN.md${NOTE}"
     fi
   else
     if [ "$1" = "reset" ]; then
