@@ -63,6 +63,29 @@ export const name = 'volens'
 /** Two or three letters, then up to three subtags: `zh`, `zh-CN`, `zh-Hans-CN`. */
 const LANGUAGE_TAG = /^[A-Za-z]{2,3}([-_][A-Za-z0-9]{2,8}){0,3}$/
 
+/** A decision-log entry heading: date, delimiter, then its authored title. */
+const DECISION_TITLE = /^### \d{4}-\d{2}-\d{2} — (.+)\r?$/
+
+/**
+ * Extract decision titles from the exact line slice a delta covers.
+ *
+ * The cursor is a newline count, so lines `from..to` are the corresponding
+ * one-based slice of `split('\\n')`. Titles are returned in log order and remain
+ * verbatim; malformed headings are ignored and leave the caller's fallback intact.
+ *
+ * @param {string} logText - the complete decision log.
+ * @param {number} from - first line of the delta, one-based.
+ * @param {number} to - last line of the delta, one-based.
+ * @returns {string[]} matching titles in source order.
+ */
+function decisionTitles(logText, from, to) {
+  return logText
+    .split('\n')
+    .slice(from - 1, to)
+    .map(line => DECISION_TITLE.exec(line)?.[1])
+    .filter(title => title !== undefined)
+}
+
 /**
  * Read a language tag from a pin file, or `undefined`.
  *
@@ -152,25 +175,40 @@ function isSubagent(ctx, agent) {
  * @param {'delta' | 'rebuild'} kind - which branch fired.
  * @param {number} stale - the line count DESIGN.md reflected before this run, which is the pre-reset count on a rebuild.
  * @param {number} m - the log's newline count.
+ * @param {string[]} titles - decision titles extracted from the delta.
  * @param {string} docLang - the project's content language.
  * @param {boolean} pinIgnored - whether a pin was present and unusable.
  * @param {string} uiLang - the machine's communication language.
  * @returns {{ notice: string, context: string }} both texts, already localized.
  */
-function renderMessages(kind, stale, m, docLang, pinIgnored, uiLang) {
+function renderMessages(kind, stale, m, titles, docLang, pinIgnored, uiLang) {
   const note = pinIgnored
     ? uiLang === 'zh'
       ? `（内容语言 pin 被忽略：不是语言标签，改用 ${docLang}）`
       : ` (content-language pin ignored — not a language tag; using ${docLang})`
     : ''
 
-  const notice = uiLang === 'zh'
-    ? kind === 'rebuild'
+  let notice
+  if (kind === 'rebuild') {
+    notice = uiLang === 'zh'
       ? `📝 DECISION-LOG 被改写,光标已重置,将重建 DESIGN.md${note}`
-      : `📝 DECISION-LOG 新增 ${stale}→${m} 行,「如意」将同步 DESIGN.md${note}`
-    : kind === 'rebuild'
-      ? `📝 DECISION-LOG was rewritten; cursor reset, DESIGN.md will rebuild${note}`
-      : `📝 DECISION-LOG grew (${stale}→${m}); volens will sync DESIGN.md${note}`
+      : `📝 DECISION-LOG was rewritten; cursor reset, DESIGN.md will rebuild${note}`
+  } else if (titles.length === 0) {
+    notice = uiLang === 'zh'
+      ? `📝 DECISION-LOG 新增 ${stale}→${m} 行,「如意」将据此更新 DESIGN.md${note}。`
+      : `📝 DECISION-LOG grew (${stale}→${m}); volens will update DESIGN.md accordingly${note}.`
+  } else {
+    const from = stale + 1
+    const range = from === m
+      ? uiLang === 'zh' ? `第 ${m} 行` : `line ${m}`
+      : uiLang === 'zh' ? `第 ${from}–${m} 行` : `lines ${from}–${m}`
+    const titleText = titles.length === 1
+      ? titles[0]
+      : titles.map((title, index) => `${index + 1}) ${title}`).join(uiLang === 'zh' ? '；' : '; ')
+    notice = uiLang === 'zh'
+      ? `📝 DECISION-LOG 新增 ${titles.length} 条决策记录（${range}）：${titleText}。「如意」将据此更新 DESIGN.md${note}。`
+      : `📝 DECISION-LOG gained ${titles.length} ${titles.length === 1 ? 'decision record' : 'decision records'} (${range}): ${titleText}. volens will update DESIGN.md accordingly${note}.`
+  }
 
   const opening = kind === 'rebuild'
     ? `The decision log docs/DECISION-LOG.md was rewritten and is now at line ${m}; docs/DESIGN.md is a stale snapshot of an earlier design (it reflected ${stale} lines, which no longer exist). Rebuild it from the whole log: read lines 1..${m} in full.`
@@ -354,7 +392,10 @@ export function apply(ctx) {
     }
 
     const { ui, doc, pinIgnored } = resolveLanguages(project)
-    const { notice, context } = renderMessages(kind, stale, m, doc, pinIgnored, ui)
+    const titles = kind === 'delta'
+      ? decisionTitles(readFileSync(log, 'utf8'), stale + 1, m)
+      : []
+    const { notice, context } = renderMessages(kind, stale, m, titles, doc, pinIgnored, ui)
 
     return {
       ...decision,

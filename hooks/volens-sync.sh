@@ -160,18 +160,74 @@ emit() {
       NOTE=" (content-language pin ignored — not a language tag; using ${LANG_DOC})"
     fi
   fi
+  local -a TITLES=()
+  local TITLE TITLE_COUNT=0
+  if [ "$1" != "reset" ]; then
+    while IFS= read -r TITLE; do
+      TITLE="${TITLE%$'\r'}"
+      [ -n "$TITLE" ] && TITLES+=("$TITLE")
+    done < <(
+      sed -n "$((N+1)),${M}p" "$LOG" |
+        sed -n 's/^### [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] — \(.*\)$/\1/p'
+    )
+    TITLE_COUNT="${#TITLES[@]}"
+  fi
+
   local MSG
   if [ "$LANG_UI" = "zh" ]; then
     if [ "$1" = "reset" ]; then
       MSG="📝 DECISION-LOG 被改写,光标已重置,将重建 DESIGN.md${NOTE}"
     else
-      MSG="📝 DECISION-LOG 新增 ${N}→${M} 行,「如意」将同步 DESIGN.md${NOTE}"
+      if [ "$TITLE_COUNT" -eq 0 ]; then
+        MSG="📝 DECISION-LOG 新增 ${N}→${M} 行,「如意」将据此更新 DESIGN.md${NOTE}。"
+      else
+        local RANGE
+        if [ "$((N+1))" -eq "$M" ]; then
+          RANGE="第 ${M} 行"
+        else
+          RANGE="第 $((N+1))–${M} 行"
+        fi
+        local TITLE_TEXT="" INDEX
+        if [ "$TITLE_COUNT" -eq 1 ]; then
+          TITLE_TEXT="${TITLES[0]}"
+        else
+          for INDEX in "${!TITLES[@]}"; do
+            [ -n "$TITLE_TEXT" ] && TITLE_TEXT="${TITLE_TEXT}；"
+            TITLE_TEXT="${TITLE_TEXT}$((INDEX+1))) ${TITLES[$INDEX]}"
+          done
+        fi
+        MSG="📝 DECISION-LOG 新增 ${TITLE_COUNT} 条决策记录（${RANGE}）：${TITLE_TEXT}。「如意」将据此更新 DESIGN.md${NOTE}。"
+      fi
     fi
   else
     if [ "$1" = "reset" ]; then
       MSG="📝 DECISION-LOG was rewritten; cursor reset, DESIGN.md will rebuild${NOTE}"
     else
-      MSG="📝 DECISION-LOG grew (${N}→${M}); volens will sync DESIGN.md${NOTE}"
+      if [ "$TITLE_COUNT" -eq 0 ]; then
+        MSG="📝 DECISION-LOG grew (${N}→${M}); volens will update DESIGN.md accordingly${NOTE}."
+      else
+        local RANGE RECORD_LABEL
+        if [ "$((N+1))" -eq "$M" ]; then
+          RANGE="line ${M}"
+        else
+          RANGE="lines $((N+1))–${M}"
+        fi
+        if [ "$TITLE_COUNT" -eq 1 ]; then
+          RECORD_LABEL="decision record"
+        else
+          RECORD_LABEL="decision records"
+        fi
+        local TITLE_TEXT="" INDEX
+        if [ "$TITLE_COUNT" -eq 1 ]; then
+          TITLE_TEXT="${TITLES[0]}"
+        else
+          for INDEX in "${!TITLES[@]}"; do
+            [ -n "$TITLE_TEXT" ] && TITLE_TEXT="${TITLE_TEXT}; "
+            TITLE_TEXT="${TITLE_TEXT}$((INDEX+1))) ${TITLES[$INDEX]}"
+          done
+        fi
+        MSG="📝 DECISION-LOG gained ${TITLE_COUNT} ${RECORD_LABEL} (${RANGE}): ${TITLE_TEXT}. volens will update DESIGN.md accordingly${NOTE}."
+      fi
     fi
   fi
   # Every interpolated value is escaped: CONTEXT embeds this project's content
