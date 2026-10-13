@@ -193,7 +193,7 @@ emit() {
         else
           for INDEX in "${!TITLES[@]}"; do
             [ -n "$TITLE_TEXT" ] && TITLE_TEXT="${TITLE_TEXT}；"
-            TITLE_TEXT="${TITLE_TEXT}$((INDEX+1))) ${TITLES[$INDEX]}"
+            TITLE_TEXT="${TITLE_TEXT}$((INDEX+1)). ${TITLES[$INDEX]}"
           done
         fi
         MSG="📝 DECISION-LOG 新增 ${TITLE_COUNT} 条决策记录（${RANGE}）：${TITLE_TEXT}。「如意」将据此更新 DESIGN.md${NOTE}。"
@@ -223,7 +223,7 @@ emit() {
         else
           for INDEX in "${!TITLES[@]}"; do
             [ -n "$TITLE_TEXT" ] && TITLE_TEXT="${TITLE_TEXT}; "
-            TITLE_TEXT="${TITLE_TEXT}$((INDEX+1))) ${TITLES[$INDEX]}"
+            TITLE_TEXT="${TITLE_TEXT}$((INDEX+1)). ${TITLES[$INDEX]}"
           done
         fi
         MSG="📝 DECISION-LOG gained ${TITLE_COUNT} ${RECORD_LABEL} (${RANGE}): ${TITLE_TEXT}. volens will update DESIGN.md accordingly${NOTE}."

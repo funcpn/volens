@@ -204,7 +204,7 @@ function renderMessages(kind, stale, m, titles, docLang, pinIgnored, uiLang) {
       : uiLang === 'zh' ? `第 ${from}–${m} 行` : `lines ${from}–${m}`
     const titleText = titles.length === 1
       ? titles[0]
-      : titles.map((title, index) => `${index + 1}) ${title}`).join(uiLang === 'zh' ? '；' : '; ')
+      : titles.map((title, index) => `${index + 1}. ${title}`).join(uiLang === 'zh' ? '；' : '; ')
     notice = uiLang === 'zh'
       ? `📝 DECISION-LOG 新增 ${titles.length} 条决策记录（${range}）：${titleText}。「如意」将据此更新 DESIGN.md${note}。`
       : `📝 DECISION-LOG gained ${titles.length} ${titles.length === 1 ? 'decision record' : 'decision records'} (${range}): ${titleText}. volens will update DESIGN.md accordingly${note}.`
