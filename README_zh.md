@@ -146,7 +146,7 @@ DSH 不像另外两家那样读插件清单。它把 **cordis bundle**——带�
 
 依赖它之前，有两件事值得先知道：
 
-- **更新时用 `@latest`。**这条命令是在 profile 里执行 `pnpm add`。裸命令 `add volens-dsh` 适合首次安装，但对已安装的包可能只确认现有版本范围已经满足，并报告 "Lockfile is up to date"。要更新就执行 `add volens-dsh@latest`；只有固定或回滚版本时才写具体版本（`add volens-dsh@0.4.1`）。如果解析到的版本比 profile 的供应链策略允许的更新，CLI 会先说明，并把它加进 profile 的 `pnpm-workspace.yaml` 里的 `minimumReleaseAgeExclude`。技能在同一个包里，随它一起更新。
+- **更新时用 `@latest`。**这条命令是在 profile 里执行 `pnpm add`。裸命令 `add volens-dsh` 适合首次安装，但对已安装的包可能只确认现有版本范围已经满足，并报告 "Lockfile is up to date"。要更新就执行 `add volens-dsh@latest`；只有固定或回滚版本时才写具体版本（`add volens-dsh@0.4.2`）。如果解析到的版本比 profile 的供应链策略允许的更新，CLI 会先说明，并把它加进 profile 的 `pnpm-workspace.yaml` 里的 `minimumReleaseAgeExclude`。技能在同一个包里，随它一起更新。
 - **同步通知是一条折叠的上下文行，不是独立的一行提示。** 找一个小上下文图标，旁边写着 `volens` 和通知文字——它和工具调用行排在一起，很容易划过。同步本身不依赖你是否看见它。
 
 ### 备选安装方法：下载压缩包
@@ -156,7 +156,7 @@ DSH 不像另外两家那样读插件清单。它把 **cordis bundle**——带�
 先把文件夹拿到手：
 
 1. 打开本仓库的 **Releases** 页面，在最新一个版本里下载 **Source code (zip)**；如果那个版本另外附了打包好的 zip，就下那一个
-2. 解压。解出来的文件夹名带后缀（比如 `volens-0.4.1`、`volens-main`），**把它改名为 `volens`**
+2. 解压。解出来的文件夹名带后缀（比如 `volens-0.4.2`、`volens-main`），**把它改名为 `volens`**
 
 **Claude Code** —— 整个文件夹移到你的 skills 目录下：
 

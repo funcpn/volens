@@ -57,7 +57,7 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 
-/** Cordis plugin name, used by loader diagnostics and as the message source. */
+/** Cordis plugin name, used by loader diagnostics and as the messages' producer-owned source kind. */
 export const name = 'volens'
 
 /** Two or three letters, then up to three subtags: `zh`, `zh-CN`, `zh-Hans-CN`. */
@@ -401,13 +401,17 @@ export function apply(ctx) {
       ...decision,
       messages: [
         ...decision.messages,
+        // Session format v4 requires a producer-owned source kind: a non-empty
+        // string that is not `plugin`. The plugin's own name is that identity,
+        // and it is also what the context row renders as its label on both v3
+        // (bare kind fallback) and v4 (the kind itself).
         createUserMessage({
           content: [{ type: 'text', text: context }],
-          source: { kind: 'plugin', plugin: name },
+          source: { kind: name },
         }),
         createUserMessage({
           content: [{ type: 'text', text: notice }],
-          source: { kind: 'plugin', plugin: name, form: 'notice', summary: notice },
+          source: { kind: name, form: 'notice', summary: notice },
         }),
       ],
     }

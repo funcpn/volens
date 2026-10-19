@@ -146,7 +146,7 @@ DSH does not read a plugin manifest the way the other two do. It loads **cordis 
 
 Two things worth knowing before you rely on it:
 
-- **Updating uses `@latest`.** The command runs `pnpm add` inside the profile. A bare `add volens-dsh` is suitable for a first install, but on an installed copy it can leave a satisfied version range unchanged and report "Lockfile is up to date". Use `add volens-dsh@latest` to update; write a specific version only to pin or roll back (`add volens-dsh@0.4.1`). If the resolved release is newer than the profile's supply-chain policy allows, the CLI says so and adds it to `minimumReleaseAgeExclude` in the profile's `pnpm-workspace.yaml` before installing. The skill ships in the same package, so it arrives with it.
+- **Updating uses `@latest`.** The command runs `pnpm add` inside the profile. A bare `add volens-dsh` is suitable for a first install, but on an installed copy it can leave a satisfied version range unchanged and report "Lockfile is up to date". Use `add volens-dsh@latest` to update; write a specific version only to pin or roll back (`add volens-dsh@0.4.2`). If the resolved release is newer than the profile's supply-chain policy allows, the CLI says so and adds it to `minimumReleaseAgeExclude` in the profile's `pnpm-workspace.yaml` before installing. The skill ships in the same package, so it arrives with it.
 - **The sync notice arrives as a collapsed context row, not as a line of its own.** Look for a small context icon with `volens` and the notice text beside it — it sits where tool-call rows sit, and is easy to scroll past. The synchronization does not depend on seeing it.
 
 ### Alternative: install from a ZIP
@@ -156,7 +156,7 @@ If `git` can't reach GitHub, Claude Code and Codex can install from a download i
 Get the folder first:
 
 1. Open this repository's **Releases** page and, under the newest version, download **Source code (zip)** — or the packaged zip, if that version attaches one
-2. Unpack it. The folder name carries a suffix (`volens-0.4.1`, `volens-main`, …) — **rename it to `volens`**
+2. Unpack it. The folder name carries a suffix (`volens-0.4.2`, `volens-main`, …) — **rename it to `volens`**
 
 **Claude Code** — move the whole folder into your skills directory:
 
